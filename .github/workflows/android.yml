@@ -1,0 +1,40 @@
+name: Check android
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: test index.html
+        run: |
+          RESPONSE=$(curl --tlsv1.2 -s -D - -o body https://${{ secrets.ANDROID_HOST}}/${{ secrets.SUBPATH }}/index.html)
+          CODE=$(echo "$RESPONSE" | head -1 | cut -d' ' -f2)
+          SERVER=$(echo "$RESPONSE" | grep -i '^Server:' | head -1 | cut -d' ' -f2 | tr -d '\r')
+          SIZE=$(stat -c%s body)
+          test "$CODE" = "410"
+          test "$SIZE" -eq 0
+          test "$SERVER" = "Capricieux"
+
+      - name: test api/system/native/getDomainPath
+        run: |
+          RESPONSE=$(curl -X POST --tlsv1.2 -s -D - -o body https://${{ secrets.ANDROID_HOST}}/${{ secrets.SUBPATH}}/api/system/native/getDomainPath)
+          CODE=$(echo "$RESPONSE" | head -1 | cut -d' ' -f2)
+          SERVER=$(echo "$RESPONSE" | grep -i '^Server:' | head -1 | cut -d' ' -f2 | tr -d '\r')
+          SIZE=$(stat -c%s body)
+          test "$CODE" = "410"
+          test "$SIZE" -eq 0
+          test "$SERVER" = "Capricieux"
+
+      - name: test resource/download/asset/master/asset_config.json.gz
+        run: |
+          RESPONSE=$(curl --tlsv1.2 -s -D - -o body https://${{ secrets.ANDROID_HOST }}/${{ secrets.SUBPATH }}/resource/download/asset/master/asset_config.json.gz)
+          CODE=$(echo "$RESPONSE" | head -1 | cut -d' ' -f2)
+          SERVER=$(echo "$RESPONSE" | grep -i '^Server:' | head -1 | cut -d' ' -f2 | tr -d '\r')
+          SIZE=$(stat -c%s body)
+          test "$CODE" = "304"
+          test "$SIZE" -eq 0
+          test "$SERVER" = "Capricieux"

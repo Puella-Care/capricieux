@@ -1,0 +1,30 @@
+name: Check te-data
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: test sync
+        run: |
+          RESPONSE=$(curl -X POST --tlsv1.2 -sf -D - -o body https://${{ secrets.TE_HOST}}/sync)
+          CODE=$(echo "$RESPONSE" | head -1 | cut -d' ' -f2)
+          SERVER=$(echo "$RESPONSE" | grep -i '^Server:' | head -1 | cut -d' ' -f2 | tr -d '\r')
+          SIZE=$(stat -c%s body)
+          test "$CODE" = "200"
+          test "$SIZE" -eq 0
+          test "$SERVER" = "Capricieux"
+
+      - name: test config
+        run: |
+          RESPONSE=$(curl --tlsv1.2 -sf -D - -o body https://${{ secrets.TE_HOST }}/config?appid=${{ secrets.APPID }})
+          CODE=$(echo "$RESPONSE" | head -1 | cut -d' ' -f2)
+          SERVER=$(echo "$RESPONSE" | grep -i '^Server:' | head -1 | cut -d' ' -f2 | tr -d '\r')
+          SIZE=$(stat -c%s body)
+          test "$CODE" = "200"
+          test "$SIZE" -eq 0
+          test "$SERVER" = "Capricieux"

@@ -1,0 +1,25 @@
+name: Daily cronjob
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  cronjob:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: set private key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRIVATE_KEY }}" > ~/.ssh/capricieux
+          chmod 600 ~/.ssh/capricieux
+
+      - name: set public key
+        run: |
+          echo "${{ secrets.HOST }} ${{ secrets.PUBLIC_KEY }}" >> ~/.ssh/known_hosts
+
+      - name: cronjob
+        run: |
+          ssh -T -i ~/.ssh/capricieux -p "${{ secrets.PORT }}" "${{ secrets.USER}}@${{ secrets.HOST }}"
