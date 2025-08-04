@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        protocol:
+          - http
+          - https
         entry:
           - "410 GET index.html"
           - "410 GET json/maintenance/maintenance.json"
@@ -27,18 +30,25 @@ jobs:
           - "304 GET resource/download/asset/master/resource/image_native/effect/story/general/1510_mami_ribbon0.plist"
           - "304 GET resource/download/asset/master/resource/scenario/img/51065_singleraid_tart2/51065_minou_magic_circle.png"
     steps:
-      - name: Test ${{ matrix.entry }}
+      - name: Test ${{ matrix.protocol }} ${{ matrix.entry }}
         run: |
+          PROTOCOL="${{ matrix.protocol }}"
           EXPECTED_CODE=$(echo "${{ matrix.entry }}" | cut -d' ' -f1)
           METHOD=$(echo "${{ matrix.entry }}" | cut -d' ' -f2)
           FILEPATH=$(echo "${{ matrix.entry }}" | cut -d' ' -f3-)
 
           BODYFILE=$(mktemp)
-          RESPONSE=$(curl -X "${METHOD}" --tlsv1.2 -s -D - -o "${BODYFILE}" "https://${{ secrets.IOS_HOST }}/${{ secrets.SUBPATH }}/${FILEPATH}")
+          RESPONSE=$(curl -X "${METHOD}" -s -D - -o "${BODYFILE}" "${PROTOCOL}://${{ secrets.IOS_HOST }}/${{ secrets.SUBPATH }}/${FILEPATH}")
           CODE=$(echo "${RESPONSE}" | head -1 | cut -d' ' -f2)
-          SERVER=$(echo "${RESPONSE}" | grep -i '^Server:' | head -1 | cut -d' ' -f2 | tr -d '\r')
+          SERVER=$(echo "${RESPONSE}" | grep -i '^Server:' | head -1 | cut -d' ' -f2- | tr -d '\r')
           SIZE=$(stat -c%s "${BODYFILE}")
           rm -f "${BODYFILE}"
+
+          if [ "${PROTOCOL}" = "http" ]; then
+            EXPECTED_CODE="301"
+            LOCATION=$(echo "${RESPONSE}" | grep -i '^Location:' | head -1 | cut -d' ' -f2- | tr -d '\r')
+            test "${LOCATION}" = "https://${{ secrets.IOS_HOST }}/${{ secrets.SUBPATH }}/${FILEPATH}"
+          fi
 
           test "${CODE}" = "${EXPECTED_CODE}"
           test "${SIZE}" -eq 0
