@@ -1,4 +1,4 @@
-name: Check android
+name: android server
 
 on:
   schedule:
@@ -7,34 +7,39 @@ on:
 
 jobs:
   check:
+    name: Test android server
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        entry:
+          - "410 GET index.html"
+          - "410 GET json/maintenance/maintenance.json"
+          - "410 GET resource/image_web/common/global/connecting.png"
+          - "410 POST api/system/native/getDomainPath"
+          - "410 POST api/test/logger/error"
+          - "410 POST api/quest/native/get"
+          - "410 GET api/page/TopPage"
+          - "410 GET api/page/NewVersionRecommend"
+          - "410 GET api/page/Ban"
+          - "304 GET resource/download/asset/master/asset_config.json.gz"
+          - "304 GET resource/download/asset/master/asset_char_list.json.gz"
+          - "304 GET resource/download/asset/master/resource/image_native/scene/download/char_list.json"
+          - "304 GET resource/download/asset/master/resource/image_native/effect/story/general/1510_mami_ribbon0.plist"
+          - "304 GET resource/download/asset/master/resource/scenario/img/51065_singleraid_tart2/51065_minou_magic_circle.png"
     steps:
-      - name: test index.html
+      - name: Test ${{ matrix.entry }}
         run: |
-          RESPONSE=$(curl --tlsv1.2 -s -D - -o body https://${{ secrets.ANDROID_HOST}}/${{ secrets.SUBPATH }}/index.html)
-          CODE=$(echo "$RESPONSE" | head -1 | cut -d' ' -f2)
-          SERVER=$(echo "$RESPONSE" | grep -i '^Server:' | head -1 | cut -d' ' -f2 | tr -d '\r')
-          SIZE=$(stat -c%s body)
-          test "$CODE" = "410"
-          test "$SIZE" -eq 0
-          test "$SERVER" = "Capricieux"
+          EXPECTED_CODE=$(echo "${{ matrix.entry }}" | cut -d' ' -f1)
+          METHOD=$(echo "${{ matrix.entry }}" | cut -d' ' -f2)
+          FILEPATH=$(echo "${{ matrix.entry }}" | cut -d' ' -f3-)
 
-      - name: test api/system/native/getDomainPath
-        run: |
-          RESPONSE=$(curl -X POST --tlsv1.2 -s -D - -o body https://${{ secrets.ANDROID_HOST}}/${{ secrets.SUBPATH}}/api/system/native/getDomainPath)
-          CODE=$(echo "$RESPONSE" | head -1 | cut -d' ' -f2)
-          SERVER=$(echo "$RESPONSE" | grep -i '^Server:' | head -1 | cut -d' ' -f2 | tr -d '\r')
-          SIZE=$(stat -c%s body)
-          test "$CODE" = "410"
-          test "$SIZE" -eq 0
-          test "$SERVER" = "Capricieux"
+          BODYFILE=$(mktemp)
+          RESPONSE=$(curl -X "${METHOD}" --tlsv1.2 -s -D - -o "${BODYFILE}" "https://${{ secrets.ANDROID_HOST }}/${{ secrets.SUBPATH }}/${FILEPATH}")
+          CODE=$(echo "${RESPONSE}" | head -1 | cut -d' ' -f2)
+          SERVER=$(echo "${RESPONSE}" | grep -i '^Server:' | head -1 | cut -d' ' -f2 | tr -d '\r')
+          SIZE=$(stat -c%s "${BODYFILE}")
+          rm -f "${BODYFILE}"
 
-      - name: test resource/download/asset/master/asset_config.json.gz
-        run: |
-          RESPONSE=$(curl --tlsv1.2 -s -D - -o body https://${{ secrets.ANDROID_HOST }}/${{ secrets.SUBPATH }}/resource/download/asset/master/asset_config.json.gz)
-          CODE=$(echo "$RESPONSE" | head -1 | cut -d' ' -f2)
-          SERVER=$(echo "$RESPONSE" | grep -i '^Server:' | head -1 | cut -d' ' -f2 | tr -d '\r')
-          SIZE=$(stat -c%s body)
-          test "$CODE" = "304"
-          test "$SIZE" -eq 0
-          test "$SERVER" = "Capricieux"
+          test "${CODE}" = "${EXPECTED_CODE}"
+          test "${SIZE}" -eq 0
+          test "${SERVER}" = "Capricieux"
