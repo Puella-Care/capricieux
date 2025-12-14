@@ -10,16 +10,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: checkout
+        uses: actions/checkout@v6
+
       - name: set private key
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.PRIVATE_KEY }}" > ~/.ssh/capricieux
-          chmod 600 ~/.ssh/capricieux
-
-      - name: set public key
-        run: |
-          echo "${{ secrets.HOST }} ${{ secrets.PUBLIC_KEY }}" >> ~/.ssh/known_hosts
+          echo "${{ secrets.PRIVATE_KEY }}" > yub.key
+          chmod 600 yub.key
 
       - name: cronjob
         run: |
-          ssh -T -i ~/.ssh/capricieux -p "${{ secrets.PORT }}" "${{ secrets.USER}}@${{ secrets.HOST }}"
+          ssh -T -i yub.key -o UserKnownHostsFile=known_hosts -p "${{ secrets.PORT }}" "${{ secrets.USER}}@${{ secrets.HOST }}"
