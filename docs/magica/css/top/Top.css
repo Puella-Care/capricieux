@@ -1,0 +1,595 @@
+.popupContent {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: auto;
+  z-index: 100001;
+}
+
+.popupContent.open {
+  -webkit-animation: popup_open .3s ease 0s 1 alternate;
+}
+
+.popupContent.close {
+  -webkit-animation: popup_close .2s ease 0s 1 alternate;
+}
+
+.popupContent .popupInner {
+  -webkit-box-sizing: border-box;
+  display: block;
+  text-align: center;
+  background-color: #fff;
+  border-radius: 22px;
+  border-width: 20px;
+  border-style: solid;
+  -webkit-border-image: url("../../img/common/popup/bg_popup.png") 22 stretch;
+  text-shadow: none;
+  z-index: 902;
+}
+
+.popupContent .popupInner .closeDefault {
+  width: 85px;
+  height: 85px;
+  background-image: url("../../img/common/popup/popup_close.png");
+  background-size: 52px 51px;
+  background-position: 29px 6px;
+  display: inline-block;
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  z-index: 20;
+}
+
+.popupContent .popupInner .popupTitle {
+  width: 532px;
+  margin: 0 auto 0;
+  background: url("../../img/common/popup/bg_popup_title_c.png") left top repeat;
+  position: relative;
+  color: #fff;
+  font-size: 22px;
+  line-height: 43px;
+  text-align: center;
+}
+
+.popupContent .popupInner .popupTitle:before, .popupContent .popupInner .popupTitle:after {
+  width: 40px;
+  height: 43px;
+  position: absolute;
+  top: 0;
+  content: '';
+}
+
+.popupContent .popupInner .popupTitle:before {
+  background: url("../../img/common/popup/bg_popup_title_l.png") left top repeat;
+  left: -38px;
+}
+
+.popupContent .popupInner .popupTitle:after {
+  background: url("../../img/common/popup/bg_popup_title_r.png") left top repeat;
+  right: -38px;
+}
+
+.popupContent .popupInner .popupTextArea {
+  width: 988px;
+  height: 340px;
+  margin: 0 auto;
+  display: table-cell;
+  overflow: hidden;
+  font-size: 26px;
+  line-height: 1.3;
+  text-align: center;
+  vertical-align: middle;
+  text-shadow: 0 0 0;
+}
+
+.popupContent .popupInner .popupTextArea p,
+.popupContent .popupInner .popupTextArea li {
+  line-height: 1.3;
+}
+
+.popupContent .popupInner .popupBtnArea {
+  margin: 0 auto;
+  text-align: center;
+}
+
+.popupContent .popupInner .popupBtnArea td {
+  padding: 0 20px;
+}
+
+.popupContent.typeA .popupInner {
+  width: 868px;
+  height: 460px;
+  position: absolute;
+  top: -webkit-calc(50% - 230px);
+  left: -webkit-calc((100% - 868px)/2);
+}
+
+.popupContent.typeA .popupInner .popupTextArea {
+  width: 825px;
+  height: 290px;
+}
+
+.popupContent.typeB .popupInner {
+  width: 988px;
+  height: 540px;
+  position: absolute;
+  top: -webkit-calc(50% - 270px);
+  left: -webkit-calc((100% - 988px)/2);
+}
+
+.popupContent.typeC .popupInner {
+  width: 655px;
+  height: 348px;
+  position: absolute;
+  top: -webkit-calc(50% - 174px);
+  left: -webkit-calc((100% - 655px)/2);
+}
+
+.popupContent.typeC .popupInner .popupTextArea {
+  height: 196px;
+}
+
+.popupContent.typeD .popupTitle {
+  width: 93% !important;
+}
+
+.popupContent.typeD .popupInner {
+  width: 477px !important;
+  height: 508px !important;
+  position: absolute;
+  top: -webkit-calc(50% - 254px) !important;
+  left: -webkit-calc((100% - 477px)/2 !important);
+}
+
+.popupContent.typeD .popupInner .popupTextArea {
+  height: 436px !important;
+}
+
+.popupContent.typeE .popupTitle {
+  width: 400px !important;
+}
+
+.popupContent.typeE .popupInner {
+  width: 550px;
+  height: 508px;
+  position: absolute;
+  top: -webkit-calc(50% - 254px);
+  left: -webkit-calc((100% - 550px)/2);
+}
+
+.popupContent.typeE .popupInner .popupTextArea {
+  height: 196px;
+}
+
+#gameStartPopup {
+  padding-top: 34px;
+}
+
+#gameStartPopup p {
+  font-size: 24px;
+  line-height: 1.5;
+}
+
+#gameStartPopup .mb_white {
+  width: 172px;
+  font-size: 18px;
+  display: block;
+  margin: 20px auto 18px;
+}
+
+#gameStartPopup .b_pink {
+  width: 326px;
+}
+
+#TopPage {
+  width: 1024px;
+  height: 100%;
+  overflow: hidden;
+}
+
+#TopPage .mainImg,
+#TopPage .thanks {
+  position: absolute;
+  top: 10px;
+  left: 125px;
+  width: 720px;
+  height: 768px;
+  background: url("../../img/page/top/chara.png") center center no-repeat;
+  background-size: 100%;
+}
+
+#TopPage .thanks {
+  top: 70px;
+  left: 5px;
+  width: 314px;
+  height: 140px;
+  background: url("../../img/page/top/txt_thanks.png") center center no-repeat;
+  background-size: 100%;
+}
+
+#TopPage #CharaListTopBtn,
+#TopPage #ArchiveBtn,
+#TopPage #RefundBtn,
+#TopPage #transferBtn,
+#TopPage #TakeoverBtn {
+  position: absolute;
+}
+
+#TopPage #CharaListTopBtn {
+  top: 150px;
+  right: 45px;
+  width: 114px;
+  height: 130px;
+  background: url("../../img/page/top/btn_chara.png") center center no-repeat;
+  background-size: 100%;
+}
+
+#TopPage #CharaListTopBtn.off {
+  pointer-events: none;
+  background: url("../../img/page/top/btn_chara_gray.png") center center no-repeat;
+  background-size: 100%;
+}
+
+#TopPage #ArchiveBtn {
+  top: 300px;
+  right: 45px;
+  width: 114px;
+  height: 130px;
+  background: url("../../img/page/top/btn_archive.png") center center no-repeat;
+  background-size: 100%;
+}
+
+#TopPage #ArchiveBtn.off {
+  pointer-events: none;
+  background: url("../../img/page/top/btn_archive_gray.png") center center no-repeat;
+  background-size: 100%;
+}
+
+#TopPage #TakeoverBtn {
+  top: 40px;
+  right: 20px;
+  width: 160px;
+  height: 80px;
+  background: url("../../img/page/top/banner_0751_s.png") center center no-repeat;
+  background-size: 100%;
+}
+
+#TopPage #TakeoverBtn.off {
+  pointer-events: none;
+  background: url("../../img/page/top/banner_0751_s_gray.png") center center no-repeat;
+  background-size: 100%;
+}
+
+#TopPage #RefundBtn {
+  bottom: 130px;
+  left: 20px;
+  width: 112px;
+  height: 28px;
+  background: url("../../img/page/top/btn_refund.png") center center no-repeat;
+  background-size: 100%;
+}
+
+#TopPage #RefundBtn.off {
+  pointer-events: none;
+  background: url("../../img/page/top/btn_refund_gray.png") center center no-repeat;
+  background-size: 100%;
+}
+
+#TopPage #transferBtn {
+  bottom: 130px;
+  left: 150px;
+  width: 112px;
+  height: 28px;
+  background: url("../../img/page/top/btn_continued.png") center center no-repeat;
+  background-size: 100%;
+}
+
+#TopPage #transferBtn.off {
+  pointer-events: none;
+  background: url("../../img/page/top/btn_continued_gray.png") center center no-repeat;
+  background-size: 100%;
+}
+
+#TopPage #noticeSec {
+  position: absolute;
+  bottom: 10px;
+  left: 16px;
+  padding: 16px;
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+#TopPage #noticeSec li {
+  margin: 6px 10px;
+  text-decoration: underline;
+  font-size: 110%;
+}
+
+#TopPage #transferInner {
+  display: none;
+}
+
+#TopPage #copy {
+  width: 428px;
+  height: 54px;
+  background: url("../../img/page/top/txt_copyright.png") left top no-repeat;
+  background-size: 100%;
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  pointer-events: none;
+}
+
+.announceText .codeSec {
+  text-align: center;
+}
+
+.announceText .codeSec .codeNoExist {
+  display: none;
+}
+
+.announceText .codeSec.noDisp .codeExist {
+  display: none;
+}
+
+.announceText .codeSec.noDisp .codeNoExist {
+  display: block;
+}
+
+.announceText .colWrap {
+  margin: 20px 0 40px;
+  display: inline-block;
+  width: 570px;
+  height: auto;
+  padding: 0px;
+  position: relative;
+}
+
+.announceText .colWrap .colLeft, .announceText .colWrap .colRight {
+  padding: 11px 10px;
+  display: inline-block;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.announceText .colWrap .colLeft {
+  width: 140px;
+  margin: 0 0 0 0;
+}
+
+.announceText .colWrap .colRight {
+  font-size: 18px;
+  margin: 0 0 0 -6px;
+  padding: 10px 20px 12px;
+}
+
+.announceText .colWrap .colLow {
+  margin: 0 0 10px 0;
+  display: inline-block;
+}
+
+.transferPop .popupTextArea {
+  height: 356px !important;
+}
+
+.transferPop #transferPopup {
+  width: 510px;
+  height: auto;
+  position: relative;
+  font-size: 20px;
+  text-align: left;
+}
+
+.transferPop #transferPopup .leftCol {
+  width: 170px;
+  margin-left: 52px;
+  padding: 5px 5px;
+  display: inline-block;
+  text-align: right;
+  text-shadow: none;
+}
+
+.transferPop #transferPopup .rightCol {
+  width: 200px;
+  padding: 5px 5px;
+  display: inline-block;
+  text-align: left;
+}
+
+.transferPop #transferPopup .rightCol input {
+  width: 200px;
+  height: auto;
+  padding: 5px 10px;
+  background-color: #fff;
+  color: #333;
+  border: 2px solid #c6a882;
+  border-radius: 5px;
+  -webkit-box-shadow: none !important;
+          box-shadow: none !important;
+  text-shadow: none;
+}
+
+.transferPop #transferPopup #transferSubmit {
+  position: absolute;
+  right: 52px;
+  bottom: 10px;
+}
+
+.transferPop #transferPopup .transferCanncel {
+  position: absolute;
+  bottom: 10px;
+  left: 52px;
+}
+
+.transferPop #transferPopup .transferAlert {
+  margin: 20px auto 10px;
+  text-align: center;
+  text-shadow: none;
+}
+
+.transferPop #transferPopup .transferNotice {
+  width: 448px;
+  word-wrap: break-word;
+  margin: 30px auto 0;
+  padding: 15px 34px;
+  background-color: #e1d2bb;
+  text-align: left;
+  border-radius: 5px;
+}
+
+#RegisterRepaymentMailPop .popupBtnArea {
+  margin: -34px auto 0;
+}
+
+#RegisterRepaymentMailPop .popupTextArea {
+  text-align: center;
+  padding: 0px 0 0 0;
+}
+
+#RegisterRepaymentMailPop .popupTextArea p {
+  font-size: 90%;
+}
+
+#RegisterRepaymentMailPop .popupTextArea .MoneySec {
+  margin: -18px 0 0 0;
+}
+
+#RegisterRepaymentMailPop .popupTextArea .common_dl {
+  display: -webkit-inline-box;
+  display: -ms-inline-flexbox;
+  display: inline-flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  margin: 0 10px;
+}
+
+#RegisterRepaymentMailPop .popupTextArea .common_dl dt, #RegisterRepaymentMailPop .popupTextArea .common_dl dd {
+  font-size: 90%;
+  padding: 8px 10px;
+}
+
+#RegisterRepaymentMailPop .popupTextArea .common_dl dt {
+  font-size: 70%;
+  padding: 12px 10px 8px;
+}
+
+#RegisterRepaymentMailPop .popupTextArea .MailSec {
+  margin: 26px 0 0 0;
+}
+
+#RegisterRepaymentMailPop .popupTextArea .MailSec p {
+  margin: 0 0 -26px 0;
+  font-size: 80%;
+}
+
+#RegisterRepaymentMailPop .popupTextArea .MailSec p.textAuth {
+  margin: 0 0 0 0;
+  font-size: 70%;
+}
+
+#RegisterRepaymentMailPop .popupTextArea .MailSec .textAddress {
+  display: inline-block;
+  margin: 0 6px 0 0;
+  font-size: 80%;
+}
+
+#RegisterRepaymentMailPop .popupTextArea .MailSec .inputSec {
+  display: inline-block;
+  width: 500px;
+  height: auto;
+  padding: 5px 10px;
+  background-color: #fff;
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important;
+  border: 2px solid #c6a882;
+  color: #333;
+  text-shadow: none;
+}
+
+#RegisterRepaymentMailPop .popupTextArea .AuthSec {
+  position: absolute;
+  width: 100%;
+  height: 40px;
+  bottom: 10px;
+  left: auto;
+}
+
+#RegisterRepaymentMailPop .popupTextArea .AuthSec span {
+  font-size: 70%;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+#RegisterRepaymentMailPop .popupTextArea .AuthSec .text {
+  margin: 0 0 0 0;
+}
+
+#RegisterRepaymentMailPop .popupTextArea .AuthSec .AuthBtn {
+  margin: 0 0 0 0;
+}
+
+#RegisterRepaymentMailPop .popupTextArea .ExplanSec {
+  position: absolute;
+  left: 6px;
+  bottom: 2px;
+}
+
+#RegisterRepaymentMailPop .popupTextArea .ExplanSec .ExplanBtn {
+  font-size: 60%;
+}
+
+#AuthNumberPop .textNumber {
+  display: inline-block;
+  margin: 0 6px 0 0;
+  font-size: 80%;
+}
+
+#AuthNumberPop .inputSec {
+  display: inline-block;
+  width: 500px;
+  height: auto;
+  padding: 5px 10px;
+  background-color: #fff;
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important;
+  border: 2px solid #c6a882;
+  color: #333;
+  text-shadow: none;
+}
+
+#RegisterRepaymentMailCaution #cautionBase {
+  margin: 12px 0 0 0;
+  width: 948px;
+  height: 366px;
+  padding: 20px 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+#RegisterRepaymentMailCaution #cautionBase .cautionPop {
+  width: 100%;
+  height: auto;
+  min-height: 100%;
+  padding-bottom: 80px;
+  position: relative;
+  font-size: 18px;
+  line-height: 30px;
+  text-align: left;
+}
+
+#RegisterRepaymentMailCaution #cautionBase .cautionPop p {
+  margin-top: 10px;
+  font-size: 20px;
+  text-align: center;
+}
+
+#RegisterRepaymentMailCaution .popupBtnArea {
+  margin: 16px auto 0;
+}
+
+.transferCheck .popupTextArea {
+  height: 356px !important;
+  font-size: 20px !important;
+}

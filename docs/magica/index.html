@@ -1,0 +1,2584 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="UTF-8">
+	<title>magica</title>
+	<meta id="viewport" name="viewport" content="width=1024, user-scalable=no" />
+	<meta name="format-detection" content="email=no,telephone=no" />
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<link rel="icon" href="./favicon.ico" id="favicon">
+	<link rel="stylesheet" href="./css/_common/sanitize.css">
+	<script type="text/javascript" charset="utf-8" src="./js/libs/jquery-3.7.1.min.js"></script>
+	<script type="text/javascript" charset="utf-8" src="./js/libs/require.js"></script>
+	<style id="headStyle"></style>
+</head>
+
+<body aria-hidden="true">
+	<div id="ready" class="">.</div>
+	<div class='debug'></div>
+	<!-- ローディング -->
+	<div id="loading">
+		<p></p>
+	</div>
+	<div id="tapBlock"></div>
+	<div id="forceTapBlock"></div>
+	<div id="popupArea">
+		<div id="popupCurtain"></div>
+	</div>
+	<div id="overlapContainer">
+		<div id="curtain"></div>
+	</div>
+	<!-- Android、ポップアップした時のクリック壁の為に -->
+	<div id="AndroidLinkStop"></div>
+	<!-- Toast notification -->
+	<div id="toastPushArea"></div>
+	<!-- コンテンツ領域 -->
+	<div id="baseContainer">
+		<div id="tutorialContainer">
+			<div class="iPhoneXcoverWrap1"></div>
+			<div class="iPhoneXcoverWrap2"></div>
+			<div class="iPhoneXcoverWrap3"></div>
+			<div class="bgWrap"></div>
+			<div class="overlayWrap"></div>
+			<div class="arrowWrap"></div>
+			<div class="arrow2Wrap"></div>
+			<div class="textWrap"></div>
+		</div>
+		<div id="mainContent"></div>
+		<div id="globalMenuContainer"></div>
+	</div>
+	<!-- ポップアップテンプレート -->
+	<script id="popupTemp" type="text/template">
+		<div class="popupInner">
+			<% if(model.canClose) { %>
+				<span class="closeDefault popupCloseBtn se_cancel TE"></span>
+			<% } %>
+			<% if(model.title) { %>
+				<p id="popupInfoDetailTitle" class="popupTitle common_title"><%= model.title %></p>
+			<% } %>
+			<div class="popupTextArea">
+				<%= model.content %>
+			</div>
+			<% if(model.closeBtnText || model.decideBtnText){ %>
+			<table class="popupBtnArea" border="0" cellspacing="0" cellpadding="0">
+				<tr>
+					<% if(model.closeBtnText){ %>
+					<td>
+						<span class="TE cancelBtn popupCloseBtn btn b_white se_cancel">
+							<span class='b_screen'></span><%= model.closeBtnText %>
+						</span>
+					</td>
+					<% } %>
+					<% if(model.decideBtnText){ %>
+					<td>
+						<span class="TE decideBtn btn b_pink <%= (model.decideLink) ? 'linkBtn se_kettei02' : 'se_decide' %>"<%= (model.decideLink) ? " data-href=" + model.decideLink : "" %>>
+							<span class='b_screen'></span>
+							<%= model.decideBtnText %>
+						</span></td>
+					<% } %>
+				</tr>
+			</table>
+			<% } %>
+		</div>
+	</script>
+
+	<script type="text/template" id="TapEffect">
+		<div class="effect01"></div>
+		<div class="effect02"></div>
+		<div class="effect03"></div>
+	</script>
+
+	<!-- コマンドobjectタグ用 -->
+	<div id="commandDiv"></div>
+
+	<!-- base64データ受取用 -->
+	<div id="baseReceive"></div>
+
+	<!-- アンドロイド戻るボタン用 -->
+	<div id="androidBackKey"></div>
+
+	<!-- クエストリタイア時 -->
+	<div id="questRetire"></div>
+
+	<!-- ネイティブ設定系受取用 -->
+	<div id="configCallback"></div>
+
+	<!-- サスペンド復帰用 -->
+	<div id="suspendAwake"></div>
+</body>
+<script type="text/javascript">
+	var _timestamp = Date.now();
+	//cssタグ追加
+	$.each([
+		'./css/_common/common.css',
+		'./css/_common/base.css',
+		'./css/top/Top.css',
+		'./css/chara/CharaTop.css',
+		'./css/chara/CharaCommon.css',
+		'./css/collection/CollectionTop.css',
+		'./css/collection/CharaCollection.css',
+		'./css/collection/MemoriaCollection.css',
+		'./css/collection/EnemyCollection.css',
+		'./css/collection/DoppelCollection.css',
+	], function(index, val) {
+		var __link = document.createElement('link');
+		__link.rel = 'stylesheet';
+		__link.href = val+ '?v='+ _timestamp;
+		document.head.appendChild(__link);
+	});
+	//jsタグ追加
+	$.each([
+		{
+			url: './js/system/replacement.js',
+			time: 1,
+		},
+		{
+			url: './js/_common/baseConfig.js',
+			time: 2,
+		},
+		{
+			url: './js/_common/base.js',
+			time: 10,
+		},
+	], function(index, val) {
+		var __script = document.createElement('script');
+		__script.src = val.url+ '?v='+ _timestamp;
+		__script.charset = 'utf-8';
+		__script.type = 'text/javascript';
+		if(index == 0){
+			__script.id = 'replaceTag';
+		};
+		//セットするタイミングをずらす
+		setTimeout(function() {
+			document.head.appendChild(__script);
+		}, val.time);
+	});
+</script>
+
+<!-- トップページ用テンプレート -->
+<script id="tempTopPage" type="text/template">
+	<% 
+	var _btnClass = '';
+	if(model.noUserData) {
+		_btnClass = 'off';
+	}
+	%>
+	<div id="TopPage">
+		<div class="mainImg"></div>
+		<div class="logo"></div>
+		<div class="thanks"></div>
+		<div id="CharaListTopBtn" class="TE se_decide <%= _btnClass %>"></div>
+		<div id="ArchiveBtn" class="TE se_decide <%= _btnClass %>"></div>
+		<div id="TakeoverBtn" class="TE se_decide"></div>
+		<div id="noticeSec">
+			<ul>
+				<li class="noticeText TE se_decide" data-id="Notice01">【重要】サービス終了のお知らせ</li>
+				<li class="noticeText TE se_decide" data-id="Notice02">【重要】「有償マギアストーン」の払戻し手続きのお知らせ</li>
+			</ul>
+		</div>
+		<div id="copy"></div>
+	</div>
+</script>
+
+<!-- アナウンスポップアップ用テンプレート -->
+<script id="tempAnnouncePopup" type="text/template">
+	<span class="announceClose popupCloseBtn TE se_cancel"></span>
+	<div class="newsCloseMini se_cancel"></div>
+	<div class="popupInner">
+		<p id="popupInfoDetailTitle" class="popupTitle"></p>
+		<div class="popupTextArea">
+			<%= model.content %>
+		</div>
+	</div>
+</script>
+
+<!-- 連携コード用テンプレート -->
+<script id="tempAnnounceTakeover" type="text/template">
+	<img src="./img/page/top/takeOver/madoka_press_2.png" class="announceImg">
+	『魔法少女まどか☆マギカ Magia Exedra』では、リリース後に連携コード（『マギアレコード 魔法少女まどか☆マギカ外伝』の「引継ぎ・連携ID」）を使用することで、<br/>
+	『マギアレコード 魔法少女まどか☆マギカ外伝』のプレイ情報を引き継いで、アーカイブ機能（魔法少女、メモリア、変身アニメ）を利用することができるようになります。<br/>
+	<br/>
+	また、ゲーム内で利用できる連携特典として以下を予定しております。<br/>
+	・マギアレコードのミラーズランキング最高成績、総合戦力値の順位に応じた称号<br/>
+	・マギカストーン（無償）<br/>
+	・特典ポートレイト【きらめく感動の気配！】<br/>
+	※名称は変更になる可能性があります。<br/>
+	<br/>
+	<div class="codeSec noDisp">
+		<div class="codeExist">
+		連携にあたり以下のコードをスクリーンショット等でお控えいただくようお願いいたします。<br/>
+		<dl class="colWrap common_dl">
+			<dt class="colLeft">連携コード</dt>
+			<dd class="colRight" id="takeOverCode"></dd>
+		</dl>
+		</div>
+		<div class="codeNoExist c_red">
+		「引継ぎ・連携ID」が存在しません。<br/><br/>
+		</div>
+	</div>
+	・特典ポートレイト【きらめく感動の気配！】<br/>
+	<img src="./img/page/top/takeOver/portrait.png" class="announceImg"><br/>
+	連携コードは『魔法少女まどか☆マギカ Magia Exedra』内で使用することができます。<br/>
+	<img src="./img/page/top/takeOver/popup.png" class="announceImg">
+	※画面は開発中のものです。<br/>
+	※『マギアレコード 魔法少女まどか☆マギカ外伝』の「引継ぎ・連携ID」は『魔法少女まどか☆マギカ Magia Exedra』において、「連携コード」として明記されます。<br/>
+	※連携機能は1度限りのご利用となりますので他ユーザー様への共有はお控えいただきますようお願いいたします。<br/>
+	<br/>
+	<p class="newsHead">『魔法少女まどか☆マギカMagia Exedra』事前登録受付中！</p>
+	2024年リリース予定の『魔法少女まどか☆マギカMagia Exedra』では、<br/>
+	現在、事前登録を以下より受付中です。<br/>
+	<br/>
+	<img src="./img/page/top/takeOver/btn_regist.png" class="announceImg announceOuterLink" data-outlink="https://app.adjust.com/1ct910uw">
+</script>
+
+<!-- お知らせ01用テンプレート -->
+<script id="tempAnnounceNotice01" type="text/template">
+	『マギアレコード 魔法少女まどか☆マギカ外伝』をご利用いただき誠にありがとうございます。<br />
+	<br />
+	この度、『マギアレコード 魔法少女まどか☆マギカ外伝』は <br />
+	2024年7月1日15:00をもちまして、DMM版(PC版)のサービスを終了、<br />
+	2024年7月31日15:00をもちまして、<br />
+	iOS/Android版のサービスを終了させていただくこととなりました。<br />
+	<br />
+	サービス提供開始以降、約6年と9ヶ月の間ユーザーの皆さまに支えられ、<br />
+	開発運営に努めてまいりましたが、現状においてサービスの品質を維持した<br />
+	運営の継続が困難であるという判断になり、このたびの決定にいたりました。<br />
+	突然のお知らせとなりました事をマギアレコード運営チーム一同深くお詫び申し上げると共に、 <br />
+	これまでご愛顧いただきましたユーザーの皆様に厚く御礼を申し上げます。<br />
+	<br />
+	サービス終了までのスケジュールは以下の通りとなっております。<br />
+	<br />
+	<p class="newsHead">ゲーム内通貨「マギアストーン」及び「マギアパスポート」等の課金アイテムの販売終了</p>2024年5月31日(金)17:00<br />
+	<br />
+	<span class="c_red">※「マギアストーン」はサービス終了までご利用可能です。</span><br />
+	<span class="c_red">※購入済みの「マギアパスポート」の特典は、期限までお受取りいただけます。</span><br />
+	<br />
+	<p class="newsHeadUnder">【DMM版(PC版)をご利用のお客様】</p>■DMM版(PC版)サービス終了<br />
+	2024年7月1日(月)15:00<br />
+	<br />
+	■DMM版(PC版)の未使用「有償マギアストーン」払戻し申請受付期間<br />
+	2024年7月1日(月)15:00 ～ 2024年9月8日(日)23:59<br />
+	<br />
+	<p class="newsHeadUnder">【iOS/Android版をご利用のお客様】</p>■iOS/Android版サービス終了<br />
+	2024年7月31日(水)15:00<br />
+	<br />
+	■iOS/Android版の未使用「有償マギアストーン」払戻し申請受付期間<br />
+	2024年7月31日(水)18:00 ～ 2024年10月7日(月)23:59<br />
+	<br />
+	<p class="newsHead">今後の予定</p><p class="mb10"></p><img src="./img/announce/announce_2405312.png" class="announceImg" style="display: block;margin: 0 auto;"><br />
+	<p class="newsHead">【重要】</p><p class="newsHeadUnder">○払戻しについて</p>・サービス終了後、ご購入いただいた未使用の「有償マギアストーン」がある場合、<br />
+	　お申出をいただくことにより払戻しを行います。<br />
+	・すでに消費された「有償マギアストーン」、所有中の「無償マギアストーン」、<br />
+	　及び「有償マギアストーン」以外の購入済みゲーム内アイテムは払戻しの対象外となります。<br />
+	・「有償マギアストーン」と「無償マギアストーン」の所持数は<br />
+	　ホーム画面上部の「マギアストーン」の「＋」ボタンをタップし表示される<br />
+	　マギアストーン購入画面の下部にてご確認いただけます。<br />
+	<span class="c_red">・払戻しについては、本人確認のため、</span><br />
+	<span class="c_red">　「プレイヤー名」「プレイヤーID」「引継ぎ・連携ID」が必要となります。</span><br />
+	・サービスが終了すると、「プレイヤー名」「プレイヤーID」「引継ぎ・連携ID」を<br />
+	　確認できなくなりますので、事前に「プレイヤー名」「プレイヤーID」<br />
+	　「引継ぎ・連携ID」をお控えください。<br />
+	・「プレイヤー名」及び「プレイヤーID」はホーム画面左上の「キャラクターアイコン」を<br />
+	　タップし表示される画面にて確認することができます。<br />
+	・「引継ぎ・連携ID」はホーム画面左の「歯車アイコン」をタップした後、<br />
+	　「設定」＞「引継ぎ・連携」を順番にタップすることで表示される画面で<br />
+	　確認することができます。<br />
+	<span class="c_red">・払戻し申請受付期間内にお申出がない場合には、</span><br />
+	<span class="c_red">　払戻しができなくなることを、ご了承ください。</span><br />
+	<span class="c_red">・各種お問い合わせの際には、お客様のデータ確認を行う必要があるため、</span><br />
+	<span class="c_red">　未使用の「有償マギアストーン」の払戻し手続きが完了するまでは、</span><br />
+	<span class="c_red">　アプリの削除はお控えください。</span><br />
+	<br />
+	<span class="c_red">※払戻しの詳細については以下のお知らせをご参照ください。</span><br />
+	＞お知らせ：<br />
+	<span class="otherNews noticeText" data-id="Notice02">【重要】「有償マギアストーン」の払戻し手続きのお知らせ</span><br />
+	<br />
+	<p class="newsHeadUnder">○シリアルコードの有効期限について</p>サービス終了に伴い、現在利用可能なシリアルコードの有効期限を、<br />
+	誠に勝手ながら下記の通り変更させていただきます。<br />
+	<br />
+	■対象となるシリアルコード<br />
+	・『マギア☆レポート』6巻封入特典<br />
+	　いろはちゃんの衣装【未完成】×1<br />
+	<br />
+	■有効期限<br />
+	【DMM版(PC版)をご利用のお客様】<br />
+	・「2024年12月31日(火)23:59まで」から「2024年7月1日(月)14:59まで」<br />
+	<br />
+	【Android版をご利用のお客様】<br />
+	・「2024年12月31日(火)23:59まで」から「2024年7月31日(水)14:59まで」<br />
+	<br />
+	上記シリアルコードにつきましては、お早めにご利用いただけますようお願いいたします。<br />
+</script>
+
+<!-- お知らせ02用テンプレート -->
+<script id="tempAnnounceNotice02" type="text/template">
+『マギアレコード 魔法少女まどか☆マギカ外伝』をご利用いただき誠にありがとうございます。<br />
+<br />
+『マギアレコード 魔法少女まどか☆マギカ外伝』のサービス提供終了に伴い、<br />
+資金決済に関する法律第20条第1項の規定に基づき、<br />
+未使用の「有償マギアストーン」について下記の要領にて払戻しをいたします。<br />
+<br />
+<p class="newsHeadUnder">■払戻しを行う前払式支払手段発行者の商号</p>〒102-8353　東京都千代田区六番町4番地5<br />
+株式会社アニプレックス<br />
+<br />
+<p class="newsHeadUnder">■払戻し対象となる前払式支払手段の種類</p>以下の時点で未使用の「有償マギアストーン」<br />
+<br />
+・DMM版(PC版)<br />
+2024年7月1日(月)15:00<br />
+<br />
+・iOS/Android版<br />
+2024年7月31日(水)15:00<br />
+<br />
+<p class="newsHeadUnder">■払戻し受付期間</p>・DMM版(PC版)<br />
+2024年7月1日(月)15:00 ～ 2024年9月8日(日)23:59<br />
+<br />
+・iOS/Android版<br />
+2024年7月31日(水)18:00 ～ 2024年10月7日(月)23:59<br />
+<br />
+※上記払戻し受付期間内に申出がない場合は、当該払戻し手続きから除斥されます。<br />
+<span class="c_red">※DMM版(PC版)とiOS/Android版の両方で未使用の「有償マギアストーン」を</span><br />
+<span class="c_red">　お持ちのお客様は、以下に記載のDMM版(PC版)とiOS/Android版</span><br />
+<span class="c_red">　それぞれの申出方法にしたがって別途申請頂く必要がございます。</span><br />
+<br />
+<p class="newsHeadUnder">■事前準備</p><span class="c_red">・払戻しについては、本人確認のため、</span><br />
+<span class="c_red">　「プレイヤー名」「プレイヤーID」「引継ぎ・連携ID」が必要となります。</span><br />
+・サービスが終了すると、「プレイヤー名」「プレイヤーID」「引継ぎ・連携ID」を<br />
+　確認できなくなりますので、事前に「プレイヤー名」「プレイヤーID」<br />
+　「引継ぎ・連携ID」をお控えください。<br />
+・「プレイヤー名」及び「プレイヤーID」は<br />
+　「ホーム画面左上の」＞「キャラクターアイコン」をタップし<br />
+　表示される画面」＞「プレイヤーID」にて確認することができます。<br />
+・「引継ぎ・連携ID」はホーム画面左の「歯車アイコン」をタップした後、<br />
+　「設定」＞「引継ぎ・連携」を順番にタップすることで<br />
+　表示される画面で確認することができます。<br />
+<span class="c_red">・各種お問い合わせの際には、お客様のデータ確認を行う必要があるため、</span><br />
+<span class="c_red">　未使用の「有償マギアストーン」の払戻し手続きが完了するまでは、</span><br />
+<span class="c_red">　アプリの削除はお控えください。</span><br />
+<br />
+<p class="newsHead">申出の方法</p><p class="newsHeadUnder">【DMM版(PC版)をご利用のお客様】</p>1.2024年7月1日(月)15:00にマギアレコード公式サイトのニュース内に掲載される<br />
+「DMM版(PC版)「有償マギアストーン」の払戻し手続きのお知らせ」に<br />
+　記載される払戻し申請フォームのURLにアクセス。<br />
+<br />
+2.払戻し申請フォームから以下の必要情報を入力し、「入力内容を確認」ボタンを押下。<br />
+・プレイヤー名<br />
+・プレイヤーID<br />
+・引継ぎ・連携ID<br />
+・メールアドレス<br />
+<br />
+3.入力内容を確認し、「送信する」ボタンを押下。<br />
+<br />
+4.入力いただいたメールアドレス宛に、当社より払戻し内容についての確認メールが届きます。<br />
+<br />
+5.内容を確認し、登録頂いたメールアドレスが正しいことを確認するため、<br />
+　届いたメールに返信。(件名や本文の内容に指定はございません)<br />
+<br />
+6.入力いただいたメールアドレス宛に、<br />
+　当社よりCASH POST(キャッシュポスト)サービスの利用に必要な「認証キー」が<br />
+　記載されたメールが届きましたら、払戻し申請の受付は完了となります。<br />
+　後日、入力いただいたメールアドレス宛に、「CASH POST(キャッシュポスト)」<br />
+　サービスを利用した払戻しの方法をご案内いたします。<br />
+<br />
+<p class="newsHeadUnder">【iOS/Android版をご利用のお客様】</p>1.サービスを終了する、2024年7月31日(水)15:00以降に<br />
+　Google Play, App Storeにて順次公開される「アーカイブアプリ」を入手して起動。<br />
+<span class="c_red">※「アーカイブアプリ」は現在ご利用いただいております</span><br />
+<span class="c_red">　『マギアレコード 魔法少女まどか☆マギカ外伝』をアップデートする形で</span><br />
+<span class="c_red">　ご提供いたしますので、アプリをアンインストールせずに</span><br />
+<span class="c_red">　端末に残しておいていただくようお願いいたします。</span><br />
+<span class="c_red">※「アーカイブアプリ」を新規にダウンロードした場合は、</span><br />
+<span class="c_red">　払戻し申請前にデータの引き継ぎを実施してください。</span><br />
+<br />
+2.「払戻し申請」ボタンをタップ。<br />
+<br />
+3.表示される内容を確認し、メールアドレスを入力して送信。<br />
+<br />
+4.入力いただいたメールアドレス宛に、当社より「確認番号」が記載されたメールが届きます。<br />
+<br />
+5.「アーカイブアプリ」の「払戻し申請」ボタンをタップし、<br />
+　「確認番号」を入力後、「確認」ボタンをタップ。<br />
+<br />
+6.入力いただいたメールアドレス宛に、<br />
+　当社よりCASH POST(キャッシュポスト)サービスの利用に必要な「認証キー」が<br />
+　記載されたメールが届きましたら、払戻し申請の受付は完了となります。<br />
+　後日、入力いただいたメールアドレス宛に、「CASH POST(キャッシュポスト)」<br />
+　サービスを利用した払戻しの方法をご案内いたします。<br />
+<br />
+<p class="newsHeadUnder">■払戻しの方法</p>株式会社DG フィナンシャルテクノロジーが運営する<br />
+「CASH POST(キャッシュポスト)」サービスを通じて、<br />
+当該サービスから提供される払戻し方法<br />
+(銀行振込、ローソン店舗受取のいずれかからお客様が希望の受取方法を選択)により<br />
+実施いたします。なお、払戻しにかかる手数料は、当社が負担いたします。<br />
+<br />
+・銀行振込でのお受取方法についてはこちら<br />
+<span class="announceOuterLink" data-outlink="https://www.veritrans.co.jp/user_support/cp_bk.html">https://www.veritrans.co.jp/user_support/cp_bk.html</span><br />
+<br />
+・ローソン店舗でのお受取方法についてはこちら<br />
+<span class="announceOuterLink" data-outlink="https://www.veritrans.co.jp/user_support/cp_lw.html">https://www.veritrans.co.jp/user_support/cp_lw.html</span><br />
+※ローソン店舗では29,999円までの代金のお受取りが可能です。<br />
+　30,000円以上のお受取りの場合は銀行振込をご利用ください。<br />
+<br />
+※「CASH POST(キャッシュポスト)」とは、<br />
+　金融庁管轄の資金移動業者である株式会社DG フィナンシャルテクノロジーが<br />
+　管理・運営する送金サービスです。<br />
+※払戻しの対象は「有償マギアストーン」を円換算した全額となります。<br />
+　(有償マギアストーン１個＝15円換算)<br />
+<br />
+<p class="newsHeadUnder">■お問い合わせ先</p>下記URLよりお問い合わせください。<br />
+＜マギアレコードお問い合わせ＞<br />
+<span class="announceOuterLink" data-outlink="https://faq.magireco.com/helpdesk?category_id=17&site_domain=default">https://faq.magireco.com/helpdesk?category_id=17&site_domain=default</span><br />
+<br />
+<p class="newsHeadUnder">■注意事項</p>・登録内容に確認事項がある場合は別途メールにてご連絡させていただきます。<br />
+　内容確認が未完了のお客様につきましては、払戻しの対象外となります。<br />
+・メールのセキュリティ設定によっては正しくメールが届かない場合がございますので、<br />
+　以下のドメインを受信できるよう設定をお願いいたします。<br />
+　@magireco.com<br />
+　@magi-reco.com<br />
+　@cashpost.jp<br />
+・払戻しは順次開始いたしますが、お申出の完了順にて対応をさせていただきます。<br />
+　払戻し完了までお時間を頂戴する場合がございますのでご了承ください。<br />
+・すでに消費された「有償マギアストーン」、所有中の「無償マギアストーン」、<br />
+　及び「有償マギアストーン」以外の購入済みゲーム内アイテムは払戻しの対象外となります。<br />
+・日本国内口座以外への払戻しはいたしかねます。<br />
+・ご登録いただきました個人情報は、払戻し手続きのみで利用いたします。<br />
+　払戻し後は当社個人情報保護ポリシー(https://www.aniplex.co.jp/help/privacy.html)に則り、<br />
+　適切に破棄いたします。<br />
+・申出完了とともに、本対応趣旨、利用規約にご理解、同意いただいたものとし、<br />
+　申出のキャンセルはできないものとします。<br />
+</script>
+
+<!-- 魔法少女ページ用テンプレート -->
+<script id="tempCharaTop" type="text/template">
+	<div id="CharaTop">
+		<div class='miniCharaWrap'></div>
+		<div id='poseChangeBtn'></div>
+	</div>
+	<div id="globalMenu">
+		<span id="globalBackBtn" class="backLinkBtn TE off">
+			<span class="se_cancel"></span>
+		</span>
+	</div>
+</script>
+
+<!-- CharaList用テンプレート -->
+<script id="tempCharaList" type="text/template">
+	<span class='orderBtn TE' data-id=""></span>
+	<span id="sortBtn" class="se_tabs TE c_gold" data-id=""></span>
+	<span id="sortPopup" class="se_tabs TE c_gold">フィルター</span>
+	<div id="charaList">
+		<p class='charaListCaution ts_white hide'>対象の魔法少女は存在しません</p>
+		<div id='charaListScrollWrap'><ul id="charaListElms" class="list"></ul></div>
+	</div>
+</script>
+
+<!-- CharaListPartsテンプレート -->
+<script id="tempCharaListParts" type="text/template">
+	<% att = "att_" + model.card.attributeId.toLowerCase() %>
+	<% star = "star_" + model.card.rank.toLowerCase() %>
+	<% frame = "frame_" + model.card.rank.toLowerCase() %>
+	<% bg = "bg_" + model.card.attributeId.toLowerCase() %>
+	<span class='eventIcon'></span>
+	<span class="att" data-nativebgkey="<%= att %>" data-src="resource/image_native/card/frame/<%= att %>.png"></span>
+	<span class="star" data-nativebgkey="<%= star %>" data-src="resource/image_native/card/frame/<%= star %>.png"></span>
+	<span class="rank" data-nativebgkey="<%= frame %>" data-src="resource/image_native/card/frame/<%= frame %>.png"></span>
+	<img data-nativeimgkey="card_<%= model.displayCardId %>_f" data-src='resource/image_native/card/image/card_<%= model.displayCardId %>_f.png'>
+	<span class="lv"><span><%= model.level %></span></span>
+	<span class="atk"><%= (model.attack + model.addendAttack) %></span>
+	<span class='def'><%= (model.defense + model.addendDefense) %></span>
+	<span class='hp'><%= (model.hp + model.addendHp) %></span>
+	<span class='eplv'><%= model.episodeLevel %></span>
+	<span class='get'><%= model.createdAt.split(" ")[0].substring( model.createdAt.split(" ")[0].length, 2 ) %></span>
+	<span class="bg" data-nativebgkey="<%= bg %>" data-src="resource/image_native/card/frame/<%= bg %>.png"></span>
+	<span class='rev'><%= model.revision %></span>
+	<span class='mlv'><%= model.magiaLevel %></span>
+	<span class='enhance'><%= model.enhanceCnt %></span>
+	<span class='composeAttribute'><%= model.atbEnhanceCnt %></span>
+
+	<span class='prm'>
+		<span class="prm_userCardId"><%= model.userCardId %></span>
+		<span class="prm_charaId"><%= model.charaId %></span>
+		<span class="prm_att"><%= model.card.attributeId %></span>
+		<% var getTimeArr = model.createdAt.split(" "); %>
+		<% var getTime1   = getTimeArr[0].split("/"); %>
+		<% var getTime2   = getTimeArr[1].split(":"); %>
+		<% var getDate    = new Date(
+		Number(getTime1[0]),
+		Number(getTime1[1]) - 1,
+		Number(getTime1[2]),
+		Number(getTime2[0]),
+		Number(getTime2[1]),
+		Number(getTime2[2])); %>
+
+		<span class="prm_get"><%= getDate.getTime() %></span>
+		<span class="prm_atk"><%= (model.attack + model.addendAttack) %></span>
+		<span class="prm_def"><%= (model.defense + model.addendDefense) %></span>
+		<span class="prm_hp"><%= (model.hp + model.addendHp) %></span>
+		<span class="prm_level"><%= model.level %></span>
+		<span class="prm_eplv"><%= model.episodeLevel %></span>
+		<span class="prm_rank"><%= model.card.rank.split("_")[1] %></span>
+		<span class="prm_rev"><%= model.revision %></span>
+		<span class="prm_mlv"><%= model.magiaLevel %></span>
+		<span class="prm_enhance"><%= model.enhanceCnt %></span>
+		<span class="prm_composeAttribute"><%= model.atbEnhanceCnt %></span>
+	</span>
+</script>
+
+<!-- CardSortテンプレート -->
+<script id="tempCardSort" type="text/template">
+	<div id="sortfilter" class='chara'>
+		<p class='filterText'>チェックをつけた項目のみ表示します</p>
+		<div id="filterAttList">
+			<div class='filterBar'>
+				<p>属性</p>
+				<span class='filterAtt se_tabs ALL' data-type-filter="ALL"><span class='checkBox'></span>すべて表示</span>
+			</div>
+			<div class='flexBox'>
+				<span class="filterAtt se_tabs FIRE" data-type-filter="FIRE">
+					<span class='checkBox'></span>
+				</span>
+				<span class="filterAtt se_tabs WATER" data-type-filter="WATER">
+					<span class='checkBox'></span>
+				</span>
+				<span class="filterAtt se_tabs TIMBER" data-type-filter="TIMBER">
+					<span class='checkBox'></span>
+				</span>
+				<span class="filterAtt se_tabs LIGHT" data-type-filter="LIGHT">
+					<span class='checkBox'></span>
+				</span>
+				<span class="filterAtt se_tabs DARK" data-type-filter="DARK">
+					<span class='checkBox'></span>
+				</span>
+				<span class="filterAtt se_tabs VOID" data-type-filter="VOID">
+					<span class='checkBox'></span>
+				</span>
+			</div>
+		</div>
+		<div id="filterRankList">
+			<div class='filterBar'>
+				<p>レアリティ</p>
+				<span class='filterRank se_tabs ALL' data-rankfilter-id="ALL"><span class='checkBox'></span>すべて表示</span>
+			</div>
+			<div class="flexBox">
+				<span class="filterRank RANK_1 se_tabs" data-rankfilter-id="RANK_1" ><span class='checkBox'></span><span class="star"></span>1</span>
+				<span class="filterRank RANK_2 se_tabs" data-rankfilter-id="RANK_2" ><span class='checkBox'></span><span class="star"></span>2</span>
+				<span class="filterRank RANK_3 se_tabs" data-rankfilter-id="RANK_3" ><span class='checkBox'></span><span class="star"></span>3</span>
+				<span class="filterRank RANK_4 se_tabs" data-rankfilter-id="RANK_4" ><span class='checkBox'></span><span class="star"></span>4</span>
+				<span class="filterRank RANK_5 se_tabs" data-rankfilter-id="RANK_5" ><span class='checkBox'></span><span class="star"></span>5</span>
+			</div>
+		</div>
+		<div id="filterEnhanceList">
+			<div class='filterBar'>
+				<p>精神強化</p>
+				<span class='filterEnhance se_tabs ALL' data-enhancefilter-id="ALL"><span class='checkBox'></span>すべて表示</span>
+			</div>
+			<div class="flexBox">
+				<span class="filterEnhance enable se_tabs" data-enhancefilter-id="enable" ><span class='checkBox'></span>開放</span>
+				<span class="filterEnhance disable se_tabs" data-enhancefilter-id="disable" ><span class='checkBox'></span>未開放</span>
+			</div>
+		</div>
+		<div id="filterInitialList">
+			<div class='filterBar'>
+				<p>タイプ</p>
+				<span class='filterInitial se_tabs ALL' data-initialfilter-id="ALL"><span class='checkBox'></span>すべて表示</span>
+			</div>
+			<div class="flexBox">
+				<span class="filterInitial BALANCE se_tabs" data-initialfilter-id="BALANCE" ><span class='checkBox'></span>バランス</span>
+				<span class="filterInitial ATTACK se_tabs" data-initialfilter-id="ATTACK" ><span class='checkBox'></span>アタック</span>
+				<span class="filterInitial DEFENSE se_tabs" data-initialfilter-id="DEFENSE" ><span class='checkBox'></span>ディフェンス</span>
+				<span class="filterInitial SUPPORT se_tabs" data-initialfilter-id="SUPPORT" ><span class='checkBox'></span>サポート</span>
+				<span class="filterInitial HEAL se_tabs" data-initialfilter-id="HEAL" ><span class='checkBox'></span>ヒール</span>
+				<span class="filterInitial MAGIA se_tabs" data-initialfilter-id="MAGIA" ><span class='checkBox'></span>マギア</span>
+				<span class="filterInitial EXCEED se_tabs" data-initialfilter-id="EXCEED" ><span class='checkBox'></span>エクシード</span>
+				<span class="filterInitial ULTIMATE se_tabs" data-initialfilter-id="ULTIMATE" ><span class='checkBox'></span>アルティメット</span>
+			</div>
+		</div>
+		<div id="cardSortBtnsArea">
+			<span class="btn b_pink se_decide TE sort popupCloseBtn"><span class='b_screen'></span>表示する</span>
+		</div>
+	</div>
+</script>
+
+<!-- CharaDataテンプレート -->
+<script id="tempCharaData" type="text/template">
+	<% if(model.card) { %>
+		<span id="attribute"><span class='type_f <%= model.card.attributeId %>'></span></span>
+		<span id="rare" class='<%= model.card.rank %>'>
+			<% var i = 0; %>
+			<% var maxRare = model.maxRare || Number(model.card.rank.split('RANK_')[1]); %>
+			<% while(i < maxRare) { %>
+				<span></span>
+			<% 	i=(i+1)|0; %>
+			<% } %>
+		</span>
+		<div id="name">
+			<p class="c_purple"><%= _.escape(model.card.cardName) %></p>
+			<% if(model.chara.title) { %>
+			<p class='title c_purple'>
+				<%= model.chara.title %>
+			</p>
+			<% } %>
+		</div>
+		<p id="lv">
+			<span>Lv</span>
+			<span class="before">
+				<span id="currentLv" class="c_purple"><%= model.level %></span>
+				<span class="sla">/</span>
+				<span id="currentMaxLv" class="small"><%= model.maxLevel %></span>
+			</span>
+			<span class="arrow hide"></span>
+			<span class="after hide">
+				<span id="afterLv" class="c_red"></span>
+				<span class="sla">/</span>
+				<span id="afterMaxLv" class="small"><%= model.maxLevel %></span>
+			</span>
+			<span class='lvMaxFlag'></span>
+		</p>
+		<div class="expGaugeWrap">
+			<div class="expGaugeInner" style='width:<%= model.expRatio %>%'></div>
+			<div class="expGaugeInner2" style='width:0%;'></div>
+			<div class="bg"></div>
+		</div>
+		<div class="status">
+			<ul class="statusList">
+				<li>
+					<span class="thStyle">HP</span>
+					<span class="tdStyle"><%= model.hp %></span>
+					<% if(model.addendHp || (model.composeAttribute && model.composeAttribute.composed.HP > 0)){ %>
+						<span class="tdStyle c_pink">(+<%= model.addendHp + model.composeAttribute.composed.HP %>)</span>
+					<% } %>
+				</li>
+				<li><span class="thStyle">ATK</span>
+					<span class="tdStyle"><%= model.attack %></span>
+					<% if(model.addendAttack || (model.composeAttribute && model.composeAttribute.composed.ATTACK > 0)){ %>
+						<span class="tdStyle c_pink">(+<%= model.addendAttack + model.composeAttribute.composed.ATTACK %>)</span>
+					<% } %>
+				</li>
+				<li>
+					<span class="thStyle">DEF</span>
+					<span class="tdStyle"><%= model.defense %></span>
+					<% if(model.addendDefense || (model.composeAttribute && model.composeAttribute.composed.DEFENSE > 0)){ %>
+						<span class="tdStyle c_pink">(+<%= model.addendDefense + model.composeAttribute.composed.DEFENSE %>)</span>
+					<% } %>
+				</li>
+			</ul>
+		</div>
+		<div class="revisionWrap flexBox">
+			<p class="c_gold title">魔力解放 </p><p class="num"><%= model.revision %></p>
+			<ul class="flexBox revisionIcon">
+				<% var i = 0;%>
+				<% var RevisionMax = 3;%>
+				<% var onNum = model.revision;%>
+				<% var noneNum = RevisionMax - onNum;%>
+				<% while(i < onNum) {%>
+					<li class="on"/>
+					<% i=(i+1)|0; %>
+				<% } %>
+				<% i = 0;%>
+				<% while(i < noneNum) {%>
+					<li class=""/>
+					<% i=(i+1)|0; %>
+				<% } %>
+			</ul>
+		</div>
+		<div class="episodeLvWrap flexBox">
+			<p class="c_gold title">エピソードLv </p><p id="episodeLv" class="num"><%= model.episodeLevel %></p>
+			<% if(model.episodeLevel < 5) { %>
+			<div class="bondsTotalPt c_gold">あと<%= model.epExpRequire %></div>
+			<% } else { %>
+			<span class='episodeLvMaxFlag'></span>
+			<% } %>
+		</div>
+		<div class="expGaugeWrap episode">
+			<div class="expGaugeInner3" style='width:<%= model.epExpRatio %>%'></div>
+			<div class="expGaugeInner4" style='width:0%;'></div>
+			<div class="bg"></div>
+		</div>
+		<div class="equipWrap flexBox">
+			<p class="c_gold title">メモリア枠</p>
+			<div class="flexBox before ">
+				<% i = 0; %>
+				<% while(i < (model.revision + 1)) { %>
+					<span class="icon"></span>
+				<% 	i=(i+1)|0; %>
+				<% } %>
+			</div>
+			<div class="flexBox after ">
+				<span class="icon on"></span>
+			</div>
+		</div>
+		<div class="magiaLvWrap flexBox">
+			<p class="c_gold title">マギアLv </p><p class="num"><%= model.magiaLevel %></p>
+			<ul class="flexBox magiaLvIcon">
+				<% i = 0;%>
+				<% var MagiaLevelMax = 5;%>
+				<% onNum = model.magiaLevel;%>
+				<% var offNum = model.episodeLevel - model.magiaLevel;%>
+				<% noneNum = MagiaLevelMax - (onNum + offNum);%>
+				<% while(i < onNum) {%>
+					<li class="on"/>
+					<% i=(i+1)|0; %>
+				<% } %>
+				<% i = 0;%>
+				<% while(i < offNum) {%>
+					<li class="off"/>
+					<% i=(i+1)|0; %>
+				<% } %>
+				<% i = 0;%>
+				<% while(i < noneNum) {%>
+					<li class="none"/>
+					<% i=(i+1)|0; %>
+				<% } %>
+			</ul>
+		</div>
+	<% } %>	
+</script>
+
+<!-- CharaResultテンプレート -->
+<script id="tempCharaResult" type="text/template">
+<div class="resultChara">
+	<img data-nativeimgkey="card_<%= model.after.displayCardId %>_l" data-src='resource/image_native/card/image/card_<%= model.after.displayCardId %>_l.png' alt="">
+</div>
+<div class="resultMessageWrap">
+</div>
+<div class="resultInner <%= model.type %>">
+	<div class="inner">
+		<div class="upTextImage <%= model.type %>"></div>
+		<p class="cardName">
+			<%= model.before.card.cardName %>
+			<% if(model.before.chara.title) { %>
+				(<%= model.before.chara.title %>)
+			<% } %>
+		</p>
+		<div class="rank statusWrap flexBox">
+			<div class='beforeRare rare <%= model.before.card.rank %>'>
+				<% var i = 0; %>
+				<% var maxRare = model.before.maxRare || Number(model.before.card.rank.split('RANK_')[1]); %>
+				<% while(i < maxRare) { %>
+					<span></span>
+				<% 	i=(i+1)|0; %>
+				<% } %>
+			</div>
+			<p class="arrow"></p>
+			<div class='afterRare rare <%= model.after.card.rank %>'>
+				<% i = 0; %>
+				<% while(i < maxRare) { %>
+					<span></span>
+				<% 	i=(i+1)|0; %>
+				<% } %>
+			</div>
+		</div>
+		<div class="level statusWrap flexBox">
+			<p class="title">Lv</p>
+			<p class="before"><%= model.before.level %>/<%= model.before.maxLevel %></p>
+			<p class="arrow"></p>
+			<p class="after"><span class="afterCurrentLv"><%= model.after.level %></span>/<span class="afterMaxLv"><%= model.after.maxLevel %></span></p>
+		</div>
+		<div class="revision statusWrap flexBox">
+			<p class="title">魔力解放</p>
+			<p class="before"><%= model.before.revision %></p>
+			<p class="arrow"></p>
+			<p class="after c_red"><%= model.after.revision %></p>
+			<ul class="flexBox revisionIcon">
+				<% var i = 0;%>
+				<% var RevisionMax = 3;%>
+				<% var onNum = model.after.revision;%>
+				<% var noneNum = RevisionMax - onNum;%>
+				<% while(i < onNum) {%>
+					<li class="on"/>
+					<% i=(i+1)|0; %>
+				<% } %>
+				<% i = 0;%>
+				<% while(i < noneNum) {%>
+					<li class=""/>
+					<% i=(i+1)|0; %>
+				<% } %>
+			</ul>
+		</div>
+		<div class="magiaLv statusWrap flexBox">
+			<p class="title">マギアLv</p>
+			<p class="before"><%= model.before.magiaLevel %></p>
+			<p class="arrow"></p>
+			<p class="after c_red"><%= model.after.magiaLevel %></p>
+			<ul class="flexBox magiaLvIcon">
+				<% i = 0;%>
+				<% var MagiaLevelMax = 5;%>
+				<% onNum = model.after.magiaLevel;%>
+				<% var offNum = model.after.episodeLevel - model.after.magiaLevel;%>
+				<% noneNum = MagiaLevelMax - (onNum + offNum);%>
+				<% while(i < onNum) {%>
+					<li class="on"/>
+					<% i=(i+1)|0; %>
+				<% } %>
+				<% i = 0;%>
+				<% while(i < offNum) {%>
+					<li class="off"/>
+					<% i=(i+1)|0; %>
+				<% } %>
+				<% i = 0;%>
+				<% while(i < noneNum) {%>
+					<li class="none"/>
+					<% i=(i+1)|0; %>
+				<% } %>
+			</ul>
+		</div>
+		<div class="epLv statusWrap flexBox">
+			<p class="title">エピソードLv</p>
+			<p class="before"><%= model.before.episodeLevel %></p>
+			<p class="arrow"></p>
+			<p class="after c_red"><%= model.after.episodeLevel %></p>
+		</div>
+		<div class="HP statusWrap flexBox">
+			<p class="title">HP</p>
+			<p class="before"><%= model.before.hp %></p>
+			<p class="arrow"></p>
+			<p class="after c_red"><%= model.after.hp %></p>
+		</div>
+		<div class="ATK statusWrap flexBox">
+			<p class="title">ATK</p>
+			<p class="before"><%= model.before.attack %></p>
+			<p class="arrow"></p>
+			<p class="after c_red"><%= model.after.attack %></p>
+		</div>
+		<div class="DEF statusWrap flexBox">
+			<p class="title">DEF</p>
+			<p class="before"><%= model.before.defense %></p>
+			<p class="arrow"></p>
+			<p class="after c_red"><%= model.after.defense %></p>
+		</div>
+		<div class="equip statusWrap flexBox">
+			<p class="title">メモリア装備枠</p>
+			<div class="flexBox before ">
+				<% i = 0; %>
+				<% while(i < (model.before.revision + 1)) { %>
+					<span class="icon"></span>
+				<% 	i=(i+1)|0; %>
+				<% } %>
+			</div>
+			<div class="flexBox after ">
+				<span class="icon on"></span>
+			</div>
+		</div>
+	</div>
+</div>
+<script id="MessageTemplate" type="text/template">
+	<%="<% console.log(model); %\>"%>
+	<%="<% var magiaLevel = Number(model.after.episodeLevel); %\>"%>
+	<%="<% var skillName  = model.after.card.cardSkill.name; %\>"%>
+	<%="<% var magiaName  = model.after.card.cardMagia.name; %\>"%>
+	<%="<% var skillDesc  = model.after.card.cardSkill.shortDescription; %\>"%>
+	<%="<% var magiaDesc  = model.after.card.cardMagia.shortDescription; %\>"%>
+	<%="<% var skillId    = model.after.card.cardSkill.groupId; %\>"%>
+	<%="<% var magiaId    = model.after.card.cardMagia.groupId; %\>"%>
+	<%="<% if(model.type == 'episode') { %\>"%>
+		<%="<% if(model.after.episodeLevel == 4 || model.after.episodeLevel == 5) { %\>"%>
+			<div class="rowBox episodeItem">
+				<div class="titleBox c_white">マギアストーン獲得</div>
+				<div class="composeRewards">
+					<img src="./img/item/main/money.png">
+					<%="<% var rewardNum = (model.after.episodeLevel == 5 && model.before.episodeLevel <= 3) ? 10 : 5; %\>"%>
+					<span class="rewardNums ts_gold">×<%="<%= rewardNum %\>"%></span>
+				</div>
+				<div class="textBox"></div>
+			</div>
+		<%="<% } %\>"%>
+		<%="<% if(model.after.episodeLevel == 2 || model.after.episodeLevel == 3) { %\>"%>
+			<%="<% var count = (model.after.episodeLevel == 2) ? 1 : 2 %\>"%>
+			<%="<% if(model.questArr[count].closeFlag) { %\>"%>
+				<div class="rowBox close">
+					<div class="titleBox c_white">魔法少女ストーリー</div>
+					<div class="textBox c_white">
+						<span>
+							<%="<%= model.questArr[count].section.genericIndex %\>"%>話「<%="<%= model.questArr[count].section.title %\>"%>」
+						</span>
+						<%="<% _.each(model.questArr[count].openConditionList,function(condition,index) { %\>"%>
+							<span><%="<%= condition %\>"%></span>
+						<%="<% }) %\>"%>
+					</div>
+				</div>
+			<%="<% } else { %\>"%>
+				<div class="rowBox episodeStory">
+					<div class="titleBox c_white">魔法少女ストーリー解放</div>
+					<div class="textBox c_white"><%="<%= model.questArr[count].section.genericIndex %\>"%>話<br>「<%="<%= model.questArr[count].section.title %\>"%>」</div>
+				</div>
+			<%="<% } %\>"%>
+		<%="<% } %\>"%>
+		<div class="rowBox episodeMagia">
+			<div class="titleBox c_white">マギアLv<%="<%= magiaLevel %\>"%>&nbsp;解放</div>
+			<div class="textBox c_white">強化でマギアLvを<%="<%= magiaLevel %\>"%>に上げられるようになりました</div>
+		</div>
+	<%="<% } %\>"%>
+	<%="<% if(model.type == 'magiaLevel') { %\>"%>
+		<%="<% if(model.after.magiaLevel == 5 && model.questArr && model.questArr[3]) { %\>"%>
+			<%="<% if(model.questArr[3].closeFlag) { %\>"%>
+				<div class="rowBox close">
+					<div class="titleBox c_white">ドッペルクエスト</div>
+					<div class="textBox c_white">
+						<span>
+							ドッペルクエスト「<%="<%= model.questArr[3].section.title %\>"%>」
+						</span>
+						<%="<% _.each(model.questArr[3].openConditionList,function(condition,index) { %\>"%>
+							<span><%="<%= condition %\>"%></span>
+						<%="<% }) %\>"%>
+					</div>
+				</div>
+			<%="<% } else { %\>"%>
+				<div class="rowBox doppel">
+					<div class="titleBox c_white">ドッペルクエスト解放</div>
+					<div class="textBox c_white">ドッペルクエスト<br>「<%="<%= model.questArr[3].section.title %\>"%>」</div>
+				</div>
+			<%="<% } %\>"%>
+		<%="<% } %\>"%>
+		<div class="rowBox magia">
+			<div class="artIcon"><img data-nativeimgkey='icon_skill_<%="<%= magiaId %\>"%>' data-src='resource/image_native/art/icon_skill_<%="<%= magiaId %\>"%>.png'></div>
+			<div class="titleBox c_white"><%="<%= magiaName %\>"%></div>
+			<div class="textBox c_white"><%="<%= magiaDesc %\>"%></div>
+		</div>
+	<%="<% } %\>"%>
+	<%="<% if(model.type === 'evolve') { %\>"%>
+		<%="<% var connectClassTxt = (model.before.card.skillId !== model.after.card.skillId) ? 'skillCompose' : ''; %\>"%>
+		<%="<% var magiaClassTxt = (model.before.card.magiaId !== model.after.card.magiaId) ? 'skillCompose' : ''; %\>"%>
+		<div class="rowBox connect <%='<%= connectClassTxt %\>'%>">
+			<div class="artIcon"><img data-nativeimgkey='icon_skill_<%="<%= skillId %\>"%>' data-src='resource/image_native/art/icon_skill_<%="<%= skillId %\>"%>.png'></div>
+			<div class="titleBox c_white"><%="<%= skillName %\>"%></div>
+			<div class="textBox c_white"><%="<%= skillDesc %\>"%></div>
+		</div>
+		<div class="rowBox magia <%='<%= magiaClassTxt %\>'%>">
+			<div class="artIcon"><img data-nativeimgkey='icon_skill_<%="<%= magiaId %\>"%>' data-src='resource/image_native/art/icon_skill_<%="<%= magiaId %\>"%>.png'></div>
+			<div class="titleBox c_white"><%="<%= magiaName %\>"%></div>
+			<div class="textBox c_white"><%="<%= magiaDesc %\>"%></div>
+		</div>
+	<%="<% } %\>"%>
+	<%="<% if(model.type === 'limitBreak') { %\>"%>
+		<%="<% if(model.after.revision === 3 && model.after.card.pieceSkillId1 && model.after.card.maxPieceSkillId1) { %\>"%>
+			<%="<% var exSkillId = model.after.card.maxPieceSkillList[0].groupId; %\>"%>
+			<%="<% var exSkillName = model.after.card.maxPieceSkillList[0].name; %\>"%>
+			<%="<% var exSkillDiscription = model.after.card.maxPieceSkillList[0].shortDescription; %\>"%>
+			<%="<% var classTxt = (model.after.card.pieceSkillId1 !== model.after.card.maxPieceSkillId1) ? 'skillCompose' : ''; %\>"%>
+			<div class="rowBox exSkill <%="<%= classTxt %\>"%>">
+				<div class="artIcon"><img data-nativeimgkey='icon_skill_<%="<%= exSkillId %\>"%>' data-src='resource/image_native/art/icon_skill_<%="<%= exSkillId %\>"%>.png'></div>
+				<div class="titleBox c_white"><%="<%= exSkillName %\>"%></div>
+				<div class="textBox c_white"><%="<%= exSkillDiscription %\>"%></div>
+			</div>
+		<%="<% } %\>"%>
+	<%="<% } %\>"%>
+	<%="<% if(model.type === 'doppelStory') { %\>"%>
+		<%="<% if(model.questArr && model.questArr[3]) { %\>"%>
+			<%="<% if(model.questArr[3].closeFlag) { %\>"%>
+				<div class="rowBox close">
+					<div class="titleBox c_white">ドッペルクエスト</div>
+					<div class="textBox c_white">
+						<span>
+							ドッペルクエスト「<%="<%= model.questArr[3].section.title %\>"%>」
+						</span>
+						<%="<% _.each(model.questArr[3].openConditionList,function(condition,index) { %\>"%>
+							<span><%="<%= condition %\>"%></span>
+						<%="<% }) %\>"%>
+					</div>
+				</div>
+			<%="<% } else { %\>"%>
+				<div class="rowBox doppel">
+					<div class="titleBox c_white">ドッペルクエスト解放</div>
+					<div class="textBox c_white">ドッペルクエスト<br>「<%="<%= model.questArr[3].section.title %\>"%>」</div>
+				</div>
+			<%="<% } %\>"%>
+		<%="<% } %\>"%>
+	<%="<% } %\>"%>
+</script>
+</script>
+
+<!-- CharaImgテンプレート -->
+<script id="tempCharaImg" type="text/template">
+	<% if(model.displayCardId) { %>
+		<div class="imgL">
+			<img data-nativeimgkey="card_<%= model.displayCardId %>_l" data-src="resource/image_native/card/image/card_<%= model.displayCardId %>_l.png" alt="">
+		</div>
+	<% } %>
+</script>
+
+<!-- CharaRicheテンプレート -->
+<script id="tempCharaRiche" type="text/template">
+	<dl id="riche" class="flexBox">
+		<dt>必要なCC</dt>
+		<dd class="needRiche">0</dd>
+		<dt>所持CC</dt>
+		<dd class="hasRiche"><%= model.gameUser.riche %></dd>
+	</dl>
+</script>
+
+<!-- CharaDetailテンプレート -->
+<script id="tempCharaDetail" type="text/template">
+	<span class="collectionBack">
+		<span class="se_cancel"></span>
+	</span>
+	<div id="detailCardName">
+		<span id="att" class='<%= model.card.attributeId.toLowerCase() %>'></span>
+		<p class="charaName ts_pink">
+			<%= _.escape(model.card.cardName) %>
+			<% if(model.chara.title) { %>
+			<span class='title ts_pink'><%= model.chara.title %></span>
+			<% } %>
+		</p>
+		<p class="charaKana"><%= model.chara.kana %></p>
+	</div>
+	<div id="detailCardImage">
+		<% var displayCardRank = model.card.rank %>
+		<% var cardFrame = "frame_" + model.card.attributeId.toLowerCase() + "_" + displayCardRank.toLowerCase(); %>
+		<% var displayCardId = model.displayCardId %>
+		<div data-nativebgkey="<%= cardFrame %>" data-src="resource/image_native/card/frame/<%= cardFrame %>.png" class="cardFrame <%= displayCardRank %> <%= model.card.attributeId %>"></div>
+		<img class="cardImg se_tabs" data-nativeimgkey="card_<%= displayCardId %>_c" data-src="resource/image_native/card/image/card_<%= displayCardId %>_c.png" alt="">
+		<% if(model.chara.id === 1042){%>
+			<div class="cardNameSpecial"><%= _.escape(model.card.cardName) %></div>
+		<% } %>
+		<div class="zoomImg se_tabs">
+			<img data-nativeimgkey="card_<%= displayCardId %>_c" data-src="resource/image_native/card/image/card_<%= displayCardId %>_c.png" alt="">
+		<% if(model.chara.id === 1042){%>
+			<div class="cardNameSpecialZoom"><%= _.escape(model.card.cardName) %></div>
+		<% } %>
+			<div class='zoomProfile show'><p class='ts_black'><%= model.chara.description %></p>
+			<div class="textToggleBtn sb_gold_02 se_tabs TE"><span class="b_screen"></span>プロフィールOFF</div></div></div>
+		<% if(!model.supportFlag && !model.isShop && !model.isEnhancement) { %>
+			<span class="moviePlayBtn se_tabs TE"></span>
+			<span class="voicePlayBtn se_tabs TE"></span>
+		<% } %>
+	</div>
+	<ul id="detailTab" class="common_tab t_gold">
+		<li data-type="status" class="current se_tabs TE"><span>ステータス</span></li>
+		<li data-type="skill" class="se_tabs TE"><span>スキル</span></li>
+		<% if(model.deckFormationFlag) { %>
+			<li data-type="memoria" class="se_tabs TE"><span>メモリア</span></li>
+		<% } %>
+		<li data-type="setting" class="se_tabs TE"><span>設定</span></li>
+	</ul>
+	<div id="cardDetailWrap" class="status">
+		<div id="hiddenWrap" class="hiddenWrap">
+			<div class="scrollInner">
+				<!-- ステータス -->
+				<div id="charaStatus">
+					<div class="status">
+						<!-- ちびキャラ -->
+						<div id="cardDetailMiniChara">
+							<img data-nativeimgkey="mini_<%= model.card.miniCharaNo %>_s" data-src='resource/image_native/mini/image/mini_<%= model.card.miniCharaNo %>_s.png' alt="">
+							<span class="bg">
+								<div id="rare" class='<%= model.card.rank %>'>
+									<% var i = 0; %>
+									<% var maxRare = model.maxRare || Number(model.card.rank.split('RANK_')[1]); %>
+									<% while(i < maxRare) { %>
+										<span></span>
+									<% 	i=(i+1)|0; %>
+									<% } %>
+								</div>
+							</span>
+						</div>
+						<div class="statusWrap">
+							<!-- レベル経験値 -->
+							<div class="level">
+								<div class="flexBox">
+									<span class="thStyle">Lv</span>
+									<p id="detailLv" class="tdStyle">
+										<span class="currentLv c_red"><%= model.level %></span>
+										<span class="sla">/</span>
+										<span class="maxLv"><%= model.maxLevel %></span>
+									</p>
+								</div>
+								<div class="gauge">
+									<% if(model.level !== model.maxLevel){ %>
+										<span class="expRequire c_gold">あと&nbsp;<%= model.expRequire %></span>
+									<% }else{ %>
+										<div class="levelMax"></div>
+									<% } %>
+									<div class="expGaugeWrap">
+										<div class="expGaugeInner" style="width:<%= model.expRatio %>%"></div>
+										<div class="bg"></div>
+									</div>
+								</div>
+							</div>
+							<div class="type flexBox">
+								<span class="thStyle">タイプ</span><span class="tdStyle"><%= model.charaType %></span>
+							</div>
+							<div class="revision">
+								<div class="flexBox">
+									<span class="thStyle">魔力解放</span><span class="c_red tdStyle"><%= model.revision %></span>
+								</div>
+								<ul class="flexBox revisionIcon">
+									<% var i = 0;%>
+									<% var RevisionMax = 3;%>
+									<% var onNum = model.revision;%>
+									<% var noneNum = RevisionMax - onNum;%>
+									<% while(i < onNum) {%>
+										<li class="on"/>
+										<% i=(i+1)|0; %>
+									<% } %>
+									<% i = 0;%>
+									<% while(i < noneNum) {%>
+										<li class=""/>
+										<% i=(i+1)|0; %>
+									<% } %>
+								</ul>
+							</div>
+							<div class="magiaLv">
+								<div class="flexBox">
+									<span class="thStyle">マギアLv</span><span class="c_red tdStyle"><%= model.magiaLevel %></span>
+								</div>
+								<ul class="flexBox magiaLvIcon">
+									<% i = 0;%>
+									<% var MagiaLevelMax = 5;%>
+									<% onNum = model.magiaLevel;%>
+									<% var offNum = model.episodeLevel - model.magiaLevel;%>
+									<% noneNum = MagiaLevelMax - (onNum + offNum);%>
+									<% while(i < onNum) {%>
+										<li class="on"/>
+										<% i=(i+1)|0; %>
+									<% } %>
+									<% i = 0;%>
+									<% while(i < offNum) {%>
+										<li class="off"/>
+										<% i=(i+1)|0; %>
+									<% } %>
+									<% i = 0;%>
+									<% while(i < noneNum) {%>
+										<li class="none"/>
+										<% i=(i+1)|0; %>
+									<% } %>
+								</ul>
+							</div>
+							<div class="epLv">
+								<div class="flexBox">
+									<span class="thStyle">エピソードLv</span>
+										<span class="c_red tdStyle">
+											<%= model.episodeLevel %>
+											<% if(model.episodeLevel < 5){ %>
+												<div class="epExpRequire c_gold">あと&nbsp;<%= model.epExpRequire %></div>
+											<% }else{ %>
+												<div class="epLevelMax"></div>
+											<% } %>
+											<div class="gauge">
+												<div class="expGaugeWrap">
+													<div class="expGaugeInner3" style="width:<%= model.epExpRatio %>%"></div>
+													<div class="bg"></div>
+												</div>
+											</div>
+										</span>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div id="popupCharaStatus">
+						<div class="flexBox statusTitle">
+							<p class="tdStyle c_gold">総合値</p>
+							<p class="tdStyle c_gold">基礎値</p>
+							<p class="tdStyle c_gold">メモリア</p>
+							<p class="tdStyle c_gold">精神強化</p>
+							<p class="tdStyle c_gold">属性強化</p>
+						</div>
+						<% if(!model.addendHp) model.addendHp = 0; %>
+						<% if(!model.addendAttack) model.addendAttack = 0; %>
+						<% if(!model.addendDefense) model.addendDefense = 0; %>
+						<div class="flexBox mt0">
+							<p class="thStyle">HP</p>
+							<% var classTxt01 = (model.memoriaHp > 0 || model.addendHp > 0 || composeAttribute.composed.HP > 0) ? 'c_red' : ''; %>
+							<p class="tdStyle <%= classTxt01 %>"><%= (model.addHp) ? model.addHp + model.addendHp + composeAttribute.composed.HP : model.hp + model.addendHp + composeAttribute.composed.HP %></p>
+							<p class="tdStyle"><%= model.hp %></p>
+							<p class="tdStyle"><%= (model.memoriaHp) ? '+' + model.memoriaHp : '-' %></p>
+							<p class="tdStyle"><%= (model.addendHp) ? '+' + model.addendHp : '-' %></p>
+							<p class="tdStyle"><%= (composeAttribute.composed.HP) ? '+' + composeAttribute.composed.HP : '-' %></p>
+						</div>
+						<div class="flexBox">
+							<p class="thStyle">ATK</p>
+							<% var classTxt02 = (model.memoriaAttack > 0 || model.addendAttack > 0 || composeAttribute.composed.ATTACK > 0) ? 'c_red' : ''; %>
+							<p class="tdStyle <%= classTxt02 %>"><%= (model.addAttack) ? model.addAttack + model.addendAttack + composeAttribute.composed.ATTACK : model.attack + model.addendAttack + composeAttribute.composed.ATTACK %></p>
+							<p class="tdStyle"><%= model.attack %></p>
+							<p class="tdStyle"><%= (model.memoriaAttack) ? '+' + model.memoriaAttack : '-' %></p>
+							<p class="tdStyle"><%= (model.addendAttack) ? '+' + model.addendAttack : '-' %></p>
+							<p class="tdStyle"><%= (composeAttribute.composed.ATTACK) ? '+' + composeAttribute.composed.ATTACK : '-' %></p>
+						</div>
+						<div class="flexBox">
+							<p class="thStyle">DEF</p>
+							<% var classTxt03 = (model.memoriaDefense > 0 || model.addendDefense > 0 || composeAttribute.composed.DEFENSE > 0) ? 'c_red' : ''; %>
+							<p class="tdStyle <%= classTxt03 %>"><%= (model.addDefense) ? model.addDefense + model.addendDefense + composeAttribute.composed.DEFENSE : model.defense + model.addendDefense + composeAttribute.composed.DEFENSE %></p>
+							<p class="tdStyle"><%= model.defense %></p>
+							<p class="tdStyle"><%= (model.memoriaDefense) ? '+' + model.memoriaDefense : '-' %></p>
+							<p class="tdStyle"><%= (model.addendDefense) ? '+' + model.addendDefense : '-' %></p>
+							<p class="tdStyle"><%= (composeAttribute.composed.DEFENSE) ? '+' + composeAttribute.composed.DEFENSE : '-' %></p>
+						</div>
+					</div>
+					<div id="popupCustomize" class="flexBox">
+						<span class="thStyle">覚醒素材<br>精神強化</span>
+						<div class="flexBox">
+							<span class="customizeStatus flexBox">
+								<span class="title tdStyle c_gold">HP</span>
+								<span class="tdStyle"><%= model.customizeBonus.HP %></span>
+							</span>
+							<span class="customizeStatus flexBox">
+								<span class="title tdStyle c_gold">ATK</span>
+								<span class="tdStyle"><%= model.customizeBonus.ATTACK %></span>
+							</span>
+							<span class="customizeStatus flexBox">
+								<span class="title tdStyle c_gold">DEF</span>
+								<span class="tdStyle"><%= model.customizeBonus.DEFENSE %></span>
+							</span>
+							<span class="customizeCommand accele tdStyle">
+								<%= model.customizeBonus.ACCEL %>
+								<% if(model.addendAccelBonus){ %>
+									<span class="addendPrm c_pink">(+<%= (model.addendAccelBonus / 10) %>%)</span>
+								<% } %>
+							</span>
+							<span class="customizeCommand blast tdStyle">
+								<%= model.customizeBonus.BLAST %>
+								<% if(model.addendBlastBonus){ %>
+									<span class="addendPrm c_pink">(+<%= (model.addendBlastBonus / 10) %>%)</span>
+								<% } %>
+							</span>
+							<span class="customizeCommand charge tdStyle">
+								<%= model.customizeBonus.CHARGE %>
+								<% if(model.addendChargeBonus){ %>
+									<span class="addendPrm c_pink">(+<%= (model.addendChargeBonus / 10) %>%)</span>
+								<% } %>
+							</span>
+						</div>
+					</div>
+					<% var allLinkClass = (model.linkBlock) ? 'off' : ''; %>
+					<% var link1Class = (location.href.indexOf('CharaListCompose') !== -1 &&
+										 location.href.indexOf('Magia') === -1) ? 'off' : ''; %>
+					<% var link2Class = (location.href.indexOf('CharaListCustomize')    !== -1) ? 'off' : ''; %>
+					<% var link3Class = (location.href.indexOf('CharaListCompose') !== -1 &&
+										 location.href.indexOf('Magia') !== -1) ? 'off' : ''; %>
+					<% var link4Class = (location.href.indexOf('CharaListEquip')        !== -1) ? 'off' : ''; %>
+					<div class="composeLinks flexBox <%= allLinkClass %>">
+						<div class="TE mb_pink linkBtn se_decide <%= link1Class %>" data-href="#/CharaListCompose/<%= model.userCardId %>"><span class="b_screen"></span>魔力強化</div>
+						<div class="TE mb_pink linkBtn se_decide <%= link2Class %>" data-href="#/CharaListCustomize/<%= model.userCardId %>"><span class="b_screen"></span>覚醒</div>
+						<div class="TE mb_pink linkBtn se_decide <%= link3Class %>" data-href="#/CharaListComposeMagia/<%= model.userCardId %>"><span class="b_screen"></span>マギア強化</div>
+						<div class="TE mb_pink linkBtn se_decide <%= link4Class %>" data-href="#/CharaListEquip/<%= model.userCardId %>"><span class="b_screen"></span>魔力解放</div>
+					</div>
+				</div>
+				<div id="charaSkill">
+					<div class="commonFrame3 command">
+						<p class="common_title_frame">ディスク</p>
+						<ul class="commandList">
+							<li class='<%= (model.card.commandType1) ? model.card.commandType1 : "" %>'></li>
+							<li class='<%= (model.card.commandType2) ? model.card.commandType2 : "" %>'></li>
+							<li class='<%= (model.card.commandType3) ? model.card.commandType3 : "" %>'></li>
+							<li class='<%= (model.card.commandType4) ? model.card.commandType4 : "" %>'></li>
+							<li class='<%= (model.card.commandType5) ? model.card.commandType5 : "" %>'></li>
+						</ul>
+					</div>
+					<% if(model.card.pieceSkillList && model.card.pieceSkillList.length > 0) { %>
+						<% var _exSkill = model.card.pieceSkillList; %>
+						<% if(model.card.maxPieceSkillList.length > 0 && model.revision === 3) { %>
+							<% _exSkill = model.card.maxPieceSkillList; %>
+						<% } %>
+						<div class="commonFrame3 connect">
+							<p class="common_title_frame">EXスキル</p>
+							<% _.each(_exSkill,function(m) { %>
+								<div class="flexBox">
+									<p class="img">
+										<img data-nativeimgkey='icon_skill_<%= m.groupId %>' data-src='resource/image_native/art/icon_skill_<%= m.groupId %>.png'>
+									</p>
+									<div class="detailWrap">
+										<p class="name c_purple"><%= m.name %></p>
+										<div class="common_line lc_beige"></div>
+										<p class="detail"><%= m.shortDescription %></p>
+									</div>
+								</div>
+							<% }) %>
+						</div>
+					<% } %>
+					<% if(model.card.cardSkill) { %>
+					<div class="commonFrame3 connect">
+						<p class="common_title_frame">コネクト</p>
+						<div class="flexBox">
+							<p class="img">
+								<img data-nativeimgkey='icon_skill_<%= model.card.cardSkill.groupId %>' data-src='resource/image_native/art/icon_skill_<%= model.card.cardSkill.groupId %>.png'>
+							</p>
+							<div class="detailWrap">
+								<p class="name c_purple"><%= model.card.cardSkill.name %></p>
+								<div class="common_line lc_beige"></div>
+								<p class="detail"><%= model.card.cardSkill.shortDescription %></p>
+							</div>
+						</div>
+					</div>
+					<% } %>
+					<% if(model.card.cardMagia) { %>
+					<div class="commonFrame3 magia">
+						<div class="border"></div>
+						<p class="common_title_frame">マギア</p>
+						<div class="flexBox magiaLevel">
+							マギアLv<span class="c_red"><%= model.magiaLevel %></span>
+							<ul class="flexBox magiaLvIcon">
+								<% i = 0;%>
+								<% var MagiaLevelMax = 5;%>
+								<% onNum = model.magiaLevel;%>
+								<% var offNum = model.episodeLevel - model.magiaLevel;%>
+								<% noneNum = MagiaLevelMax - (onNum + offNum);%>
+								<% while(i < onNum) {%>
+									<li class="on"/>
+									<% i=(i+1)|0; %>
+								<% } %>
+								<% i = 0;%>
+								<% while(i < offNum) {%>
+									<li class="off"/>
+									<% i=(i+1)|0; %>
+								<% } %>
+								<% i = 0;%>
+								<% while(i < noneNum) {%>
+									<li class="none"/>
+									<% i=(i+1)|0; %>
+								<% } %>
+							</ul>
+						</div>
+						<div class="magiaDetail">
+							<div class="flexBox">
+								<p class="img">
+									<img data-nativeimgkey='icon_skill_<%= model.card.cardMagia.groupId %>' data-src='resource/image_native/art/icon_skill_<%= model.card.cardMagia.groupId %>.png'>
+								</p>
+								<div class="detailWrap">
+									<p class="name c_purple"><%= model.card.cardMagia.name %></p>
+									<div class="common_line lc_beige"></div>
+									<p class="detail"><%= model.card.cardMagia.shortDescription %></p>
+								</div>
+							</div>
+						</div>
+						<% if(model.card.doppelCharaNo) { %>
+						<div class="doppel doppelDetail">
+							<div class="flexBox">
+								<% if(model.doppelOpenFlag && model.card.doppelMagiaId) { %>
+								<p class="img doppel">
+									<img data-nativeimgkey='mini_<%= model.card.doppelCharaNo %>_dd' data-src='resource/image_native/mini/image/mini_<%= model.card.doppelCharaNo %>_dd.png'>
+									<span class="bg"></span>
+								</p>
+								<div class="detailWrap">
+									<p class="name c_purple"><%= model.card.doppelCardMagia.name %></p>
+									<div class="common_line lc_beige"></div>
+									<p class="detail"><%= model.card.doppelCardMagia.shortDescription %></p>
+								</div>
+								<% } else { %>
+								<p class="img">
+									<img src='./img/common/chara/icon_doppel_null.png'>
+								</p>
+								<div class="detailWrap">
+									<p class="name c_purple">未解放</p>
+									<div class="common_line lc_beige"></div>
+									<% if(!model.supportFlag) { %>
+										<p class="detail">ドッペルクエストクリアで解放</p>
+									<% } %>
+								</div>
+								<% } %>
+							</div>
+						</div>
+						<% } %>
+					</div>
+					<% } %>
+					<% if(enhance.length > 0){ %>
+					<div class="commonFrame3 enhance">
+						<p class="common_title_frame">精神強化</p>
+						<div>
+							<% _.each(enhance,function(skill){console.log("skill",skill) %>
+								<% var addClass = (skill.type === "SKILL") ? "skill" : "ability"; %>
+								<div class="getWrap <%= addClass %>">
+									<img data-nativeimgkey='icon_skill_<%= skill.groupId %>' data-src='resource/image_native/art/icon_skill_<%= skill.groupId %>.png' class="artIcon">
+									<p class="skillName c_purple"><%= skill.name %></p>
+									<p class="skillDescription"><%= skill.shortDescription %></p>
+								</div>
+							<% }) %>
+						</div>
+					</div>
+					<% } %>
+				</div>
+				<div id="charaMemoria">
+					<div class="outerWrap">
+						<div id="equipWrap" class="<% if(model.rentalMemoriaUse){ %>rental<% } %>">
+							<% if(model.rentalMemoriaUse){model.revision = 3;} %>
+							<% if(model.equipPiece1) { %>
+								<div class="memoriaWrap" data-target="1">
+									<p class="ts_pink name"><%= model.equipPiece1.piece.pieceName %></p>
+									<div class="flexBox">
+										<div class="userMemoriaIcon">
+											<img src='./img/memoria/memoria_<%= model.equipPiece1.pieceId %>_s.png'><!--メモリア軽量化-->
+										</div>
+										<ul class="memoriaStatus">
+											<li class="flexBox"><span class="thStyle">HP</span><span class="tdStyle"><%= model.equipPiece1.hp %></span></li>
+											<li class="flexBox"><span class="thStyle">ATK</span><span class="tdStyle"><%= model.equipPiece1.attack %></span></li>
+											<li class="flexBox"><span class="thStyle">DEF</span><span class="tdStyle"><%= model.equipPiece1.defense %></span></li>
+										</ul>
+									</div>
+									<dl class="memoriaSkill">
+										<dt class="c_purple skillName">
+											<% if(model.equipPiece1.lbCount > 3 && model.equipPiece1.piece.pieceSkill2){%>
+												<%= model.equipPiece1.piece.pieceSkill2.name %>
+											<%}else if(model.equipPiece1.piece.pieceSkill){ %>
+												<%= model.equipPiece1.piece.pieceSkill.name %>
+											<% }else{ %>-<% } %>
+										</dt>
+										<dd class='skillDetail'>
+											<% if(model.equipPiece1.lbCount > 3 && model.equipPiece1.piece.pieceSkill2){%>
+												<%= model.equipPiece1.piece.pieceSkill2.shortDescription %>
+											<%}else if(model.equipPiece1.piece.pieceSkill){ %>
+												<%= model.equipPiece1.piece.pieceSkill.shortDescription %>
+											<% }else{ %>-<% } %>
+											<% if(model.equipPiece1.eventDescription) { %>
+												<span class='c_red'><%= model.equipPiece1.eventDescription %></span>
+											<% } %>
+										</dd>
+										<dd class='skillIcon'>
+											<img data-nativeimgkey='icon_skill_<%= model.equipPiece1.piece.pieceSkill.groupId %>' data-src='resource/image_native/art/icon_skill_<%= model.equipPiece1.piece.pieceSkill.groupId %>.png'>
+										</dd>
+									</dl>
+								</div>
+							<% } else { %>
+								<div class="memoriaWrap off" data-target="1">
+									<p class="name"></p>
+									<div class="flexBox">
+										<div class="userMemoriaIcon">
+										</div>
+									</div>
+									<dl class="memoriaSkill">
+										<dt></dt>
+									</dl>
+								</div>
+							<% } %>
+							<% if(model.revision < 1) { %>
+								<div class="memoriaWrap none" data-target="2"></div>
+							<% }else if(model.equipPiece2) { %>
+								<div class="memoriaWrap" data-target="2">
+									<p class="ts_pink name"><%= model.equipPiece2.piece.pieceName %></p>
+									<div class="flexBox">
+										<div class="userMemoriaIcon">
+											<img src='./img/memoria/memoria_<%= model.equipPiece2.pieceId %>_s.png'><!--メモリア軽量化-->
+										</div>
+										<ul class="memoriaStatus">
+											<li class="flexBox"><span class="thStyle">HP</span><span class="tdStyle"><%= model.equipPiece2.hp %></span></li>
+											<li class="flexBox"><span class="thStyle">ATK</span><span class="tdStyle"><%= model.equipPiece2.attack %></span></li>
+											<li class="flexBox"><span class="thStyle">DEF</span><span class="tdStyle"><%= model.equipPiece2.defense %></span></li>
+										</ul>
+									</div>
+									<dl class="memoriaSkill">
+										<dt class="c_purple skillName">
+											<% if(model.equipPiece2.lbCount > 3 && model.equipPiece2.piece.pieceSkill2){%>
+												<%= model.equipPiece2.piece.pieceSkill2.name %>
+											<%}else if(model.equipPiece2.piece.pieceSkill){ %>
+												<%= model.equipPiece2.piece.pieceSkill.name %>
+											<% }else{ %>-<% } %>
+										</dt>
+										<dd class='skillDetail'>
+											<% if(model.equipPiece2.lbCount > 3 && model.equipPiece2.piece.pieceSkill2){%>
+												<%= model.equipPiece2.piece.pieceSkill2.shortDescription %>
+											<%}else if(model.equipPiece2.piece.pieceSkill){ %>
+												<%= model.equipPiece2.piece.pieceSkill.shortDescription %>
+											<% }else{ %>-<% } %>
+											<% if(model.equipPiece2.eventDescription) { %>
+												<span class='c_red'><%= model.equipPiece2.eventDescription %></span>
+											<% } %>
+										</dd>
+										<dd class='skillIcon'>
+											<img data-nativeimgkey='icon_skill_<%= model.equipPiece2.piece.pieceSkill.groupId %>' data-src='resource/image_native/art/icon_skill_<%= model.equipPiece2.piece.pieceSkill.groupId %>.png'>
+										</dd>
+									</dl>
+								</div>
+							<% } else { %>
+								<div class="memoriaWrap off" data-target="2">
+									<p class="name"></p>
+									<div class="flexBox">
+										<div class="userMemoriaIcon">
+										</div>
+									</div>
+									<dl class="memoriaSkill">
+										<dt></dt>
+									</dl>
+								</div>
+							<% } %>
+							<% if(model.revision < 2) { %>
+								<div class="memoriaWrap none" data-target="3"></div>
+							<% }else if(model.equipPiece3) { %>
+								<div class="memoriaWrap" data-target="3">
+									<p class="ts_pink name"><%= model.equipPiece3.piece.pieceName %></p>
+									<div class="flexBox">
+										<div class="userMemoriaIcon">
+											<img src='./img/memoria/memoria_<%= model.equipPiece3.pieceId %>_s.png'><!--メモリア軽量化-->
+										</div>
+										<ul class="memoriaStatus">
+											<li class="flexBox"><span class="thStyle">HP</span><span class="tdStyle"><%= model.equipPiece3.hp %></span></li>
+											<li class="flexBox"><span class="thStyle">ATK</span><span class="tdStyle"><%= model.equipPiece3.attack %></span></li>
+											<li class="flexBox"><span class="thStyle">DEF</span><span class="tdStyle"><%= model.equipPiece3.defense %></span></li>
+										</ul>
+									</div>
+									<dl class="memoriaSkill">
+										<dt class="c_purple skillName">
+											<% if(model.equipPiece3.lbCount > 3 && model.equipPiece3.piece.pieceSkill2){%>
+												<%= model.equipPiece3.piece.pieceSkill2.name %>
+											<%}else if(model.equipPiece3.piece.pieceSkill){ %>
+												<%= model.equipPiece3.piece.pieceSkill.name %>
+											<% }else{ %>-<% } %>
+										</dt>
+										<dd class='skillDetail'>
+											<% if(model.equipPiece3.lbCount > 3 && model.equipPiece3.piece.pieceSkill2){%>
+												<%= model.equipPiece3.piece.pieceSkill2.shortDescription %>
+											<%}else if(model.equipPiece3.piece.pieceSkill){ %>
+												<%= model.equipPiece3.piece.pieceSkill.shortDescription %>
+											<% }else{ %>-<% } %>
+											<% if(model.equipPiece3.eventDescription) { %>
+												<span class='c_red'><%= model.equipPiece3.eventDescription %></span>
+											<% } %>
+										</dd>
+										<dd class='skillIcon'>
+											<img data-nativeimgkey='icon_skill_<%= model.equipPiece3.piece.pieceSkill.groupId %>' data-src='resource/image_native/art/icon_skill_<%= model.equipPiece3.piece.pieceSkill.groupId %>.png'>
+										</dd>
+									</dl>
+								</div>
+							<% } else { %>
+								<div class="memoriaWrap off" data-target="3">
+									<p class="name"></p>
+									<div class="flexBox">
+										<div class="userMemoriaIcon">
+										</div>
+									</div>
+									<dl class="memoriaSkill">
+										<dt></dt>
+									</dl>
+								</div>
+							<% } %>
+							<% if(model.revision < 3) { %>
+								<div class="memoriaWrap none" data-target="4"></div>
+							<% }else if(model.equipPiece4) { %>
+								<div class="memoriaWrap" data-target="4">
+									<p class="ts_pink name"><%= model.equipPiece4.piece.pieceName %></p>
+									<div class="flexBox">
+										<div class="userMemoriaIcon">
+											<img src='./img/memoria/memoria_<%= model.equipPiece4.pieceId %>_s.png'><!--メモリア軽量化-->
+										</div>
+										<ul class="memoriaStatus">
+											<li class="flexBox"><span class="thStyle">HP</span><span class="tdStyle"><%= model.equipPiece4.hp %></span></li>
+											<li class="flexBox"><span class="thStyle">ATK</span><span class="tdStyle"><%= model.equipPiece4.attack %></span></li>
+											<li class="flexBox"><span class="thStyle">DEF</span><span class="tdStyle"><%= model.equipPiece4.defense %></span></li>
+										</ul>
+									</div>
+									<dl class="memoriaSkill">
+										<dt class="c_purple skillName">
+											<% if(model.equipPiece4.lbCount > 3 && model.equipPiece4.piece.pieceSkill2){%>
+												<%= model.equipPiece4.piece.pieceSkill2.name %>
+											<%}else if(model.equipPiece4.piece.pieceSkill){ %>
+												<%= model.equipPiece4.piece.pieceSkill.name %>
+											<% }else{ %>-<% } %>
+										</dt>
+										<dd class='skillDetail'>
+											<% if(model.equipPiece4.lbCount > 3 && model.equipPiece4.piece.pieceSkill2){%>
+												<%= model.equipPiece4.piece.pieceSkill2.shortDescription %>
+											<%}else if(model.equipPiece4.piece.pieceSkill){ %>
+												<%= model.equipPiece4.piece.pieceSkill.shortDescription %>
+											<% }else{ %>-<% } %>
+											<% if(model.equipPiece4.eventDescription) { %>
+												<span class='c_red'><%= model.equipPiece4.eventDescription %></span>
+											<% } %>
+										</dd>
+										<dd class='skillIcon'>
+											<img data-nativeimgkey='icon_skill_<%= model.equipPiece4.piece.pieceSkill.groupId %>' data-src='resource/image_native/art/icon_skill_<%= model.equipPiece4.piece.pieceSkill.groupId %>.png'>
+										</dd>
+									</dl>
+								</div>
+							<% } else { %>
+								<div class="memoriaWrap off" data-target="4">
+									<p class="name"></p>
+									<div class="flexBox">
+										<div class="memoria">
+										</div>
+									</div>
+									<dl class="memoriaSkill">
+										<dt></dt>
+									</dl>
+								</div>
+							<% } %>
+						</div>
+					</div>
+				</div>
+				<div id="charaSetting">
+					<% if(!model.isShop){ %>
+						<div class="commonFrame3 discSetting">
+							<p class="common_title_frame">ディスク</p>
+							<% var dom; %>
+							<% if(model.commandVisualType == 'CHARA') { %>
+								<% dom = '<img data-nativeimgkey="mini_' + model.commandVisualId + '_d" data-src="resource/image_native/mini/image/mini_' + model.commandVisualId + '_d.png">'; %>
+							<% } else { %>
+								<% dom = '<img data-nativeimgkey="card_' + model.commandVisualId + '_d" data-src="resource/image_native/card/image/card_' + model.commandVisualId + '_d.png">'; %>
+							<% } %>
+							<div class="discPreview flexBox">
+								<div class='discWrap <%= model.card.commandType1 %>'>
+									<div class="discText"></div>
+									<%= dom %>
+								</div>
+								<div class='discWrap <%= model.card.commandType2 %>'>
+									<div class="discText"></div>
+									<%= dom %>
+								</div>
+								<div class='discWrap <%= model.card.commandType3 %>'>
+									<div class="discText"></div>
+									<%= dom %>
+								</div>
+								<div class='discWrap <%= model.card.commandType4 %>'>
+									<div class="discText"></div>
+									<%= dom %>
+								</div>
+								<div class='discWrap <%= model.card.commandType5 %>'>
+									<div class="discText"></div>
+									<%= dom %>
+								</div>
+							</div>
+							<div class="common_line lc_beige"></div>
+							<div class="flexBox miniCharaBtn">
+								<% var btnClass = (model.commandVisualType == "CHARA") ? "selected " : "" %>
+								<p data-commandtype="chara" class="mb_pink se_decide <%= btnClass %>">SD</p>
+								<% _.forEach(model.cardArr,function(txt,index){ %>
+									<% if(!txt.openFlag) { %>
+										<p class="mb_pink off">★<%= txt.rankNum %></p>
+									<% } else { %>
+										<% var btnClass = (txt.currentCommandFlag) ? 'selected' : '' %>
+										<p data-commandtype="card" data-cardarrindex="<%= index %>" class="mb_pink se_decide <%= btnClass %>">★<%= txt.rankNum %></p>
+									<% } %>
+								<% }) %>
+							</div>
+						</div>
+						<div class="commonFrame3">
+							<p class="common_title_frame">魔法少女</p>
+							<div class="flexBox">
+								<% _.forEach(model.cardArr,function(txt,index){ %>
+									<% if(!txt.openFlag) { %>
+										<div class="cardIllustWrap off">
+											<div class="offIcon"></div>
+											<p class="mb_pink off">★<%= txt.rankNum %></p>
+										</div>
+									<% } else { %>
+									<div class="cardIllustWrap">
+										<div class="userCharaIcon <%= txt.rank %> <%= txt.attributeId %>">
+											<% att = "att_" + txt.attributeId.toLowerCase() %>
+											<% frame = "frame_" + txt.rank.toLowerCase() %>
+											<% bg = "bg_" + txt.attributeId.toLowerCase() %>
+											<span class="att" data-nativebgkey="<%= att %>" data-src="resource/image_native/card/frame/<%= att %>.png"></span>
+											<span class="rank" data-nativebgkey="<%= frame %>" data-src="resource/image_native/card/frame/<%= frame %>.png"></span>
+											<img data-nativeimgkey="card_<%= txt.cardId %>_f" data-src='resource/image_native/card/image/card_<%= txt.cardId %>_f.png'>
+											<span class="bg" data-nativebgkey="<%= bg %>" data-src="resource/image_native/card/frame/<%= bg %>.png"></span>
+										</div>
+										<% btnClass =　(txt.currentCardFlag) ? 'selected' : '' %>
+										<p data-cardarrindex="<%= index %>" class="mb_pink se_decide <%= btnClass %>">★<%= txt.rankNum %></p>
+									</div>
+									<% } %>
+								<% }) %>
+							</div>
+						</div>
+						<div class="commonFrame3">
+							<p class="common_title_frame">ホーム衣装</p>
+							<div class="live2dBtns">
+								<% _.forEach(model.live2dList,function(txt,index){ %>
+									<% classTxt = (txt.live2dId == model.live2dId) ? "current" : ""; %>
+									<div class="live2dChangeBtn se_decide commonFrame4 c_gold <%= classTxt %>" data-live2did="<%= txt.live2dId %>">
+										<%= txt.description %>
+									</div>
+								<% }) %>
+							</div>
+						</div>
+					<% } %>
+				</div>
+			</div>
+		</div>
+	</div>	
+</script>
+
+<!-- AnnounceTempテンプレート -->
+<script id="tempAnnounceTemp" type="text/template">
+	<div class="announceList">
+		<div id="announceBannerArea" class="announceScroll1">
+			<div class="scrollBar">
+			<%
+				// スタートダッシュキャンペーン
+				if(addShow.startDashCampaign){
+			%>
+				<div class="pickUpEvent TE startDashCp titleList se_decide" data-newsId="<%= addShow.startDashCampaignContent.campaignNewsId %>">
+					<div class="bannerText pointFrame">▼&nbsp;開催期限：<%= addShow.startDashCampaignContent.endDate %>まで&nbsp;▼</div>
+					<!-- <img src="addShow.startDashCampaignContent.bannerImgPath"> -->
+					<img src="./img/banner/announce/banner_0500_m.png">
+				</div>
+			<% } %>
+			<% _.forEach(banner,function(model,index){ %>
+				<%
+					var endAt   = model.endAt.replace(/-/g,"\/");
+					var startAt = model.startAt.replace(/-/g,"\/");
+					if(model.showAnnounce && Date.parse(endAt) > Date.parse(currentTime) && Date.parse(startAt) < Date.parse(currentTime)){
+				%>
+				<div class="pickUpEvent <% if(model.bannerLink && readDay < Infinity){ %> popupCloseBtn TE bannerLinkBtn se_decide<% }else if(model.announcementId){ %> bannerAnnounce TE se_decide<% }else if(model.outerBannerLink){ %>outerLink TE se_decide<% } %>"<% if(model.bannerLink){ %> data-href="<%= model.bannerLink %>"<% }else if(model.announcementId){ %> data-newsId="<%= model.announcementId %>"<% }else if(model.outerBannerLink){ %> data-outlink="<%= model.outerBannerLink %>"<% } %>>
+					<% if(model.bannerText){ %><div class="bannerText pointFrame">▼&nbsp;<%= model.bannerText %>&nbsp;▼</div><% } %>
+					<img src="<%= model.imagePath %>_m.png">
+				</div>
+				<% } %>
+			<% }); %>
+			<% if(addShow.startDashGacha) { %>
+				<div class="pickUpEvent TE linkBtn se_decide" data-href="#/GachaTop/STARTDASH">
+					<img src="./img/banner/announce/banner_0119_m.png">
+				</div>
+			<% } if(addShow.startDashGachaMemoria) { %>
+				<div class="pickUpEvent TE linkBtn se_decide" data-href="#/GachaTop/STARTDASH_MEMORIA">
+					<img src="./img/banner/gacha/gachabanner_0730_m.png">
+				</div>
+			<% } if(addShow.passport) { %>
+				<div class="pickUpEvent TE announcePassport se_decide">
+					<img src="./img/banner/common/banner_purchase_001_1_a.png">
+				</div>
+			<%
+				}
+			%>
+			</div>
+		</div>
+		<ul id="announceTab" class="common_tab t_pink">
+			<li class="TE se_tabs announceBtn NEW<% if(newFlg.indexOf("NEW") > -1){ %> newIcon<% } %>" data-category="NEW"><span>お知らせ</span><div class="newMark"></div></li>
+			<li class="TE se_tabs announceBtn MNT<% if(newFlg.indexOf("MNT") > -1){ %> newIcon<% } %>" data-category="MNT"><span>メンテナンス</span><div class="newMark"></div></li>
+			<li class="TE se_tabs announceBtn UPD<% if(newFlg.indexOf("UPD") > -1){ %> newIcon<% } %>" data-category="UPD"><span>アップデート</span><div class="newMark"></div></li>
+		</ul>
+		<div class="announceScroll2" id="newsScrollWarp">
+			<ul class="announceTitle scrollBar">
+			<%
+				// 負荷軽減用変数
+				var moreDispFlg  = false;
+				var countN = countM = countU = countF = 0;
+				_.forEach(model,function(txt,index){
+					if(!txt.subject) return;
+					// 端末限定お知らせかチェック
+					if(txt.displayOs && txt.displayOs !== "ALL"){
+						if(txt.displayOs !== userAgent) return;
+					}
+					// iOS対策
+					var endAt   = txt.endAt.replace(/-/g,"\/");
+					var startAt = txt.startAt.replace(/-/g,"\/");
+					//比較用にパース
+					var parseCurrent = Date.parse(currentTime);
+					var parseEndAt   = Date.parse(endAt);
+					var parseStartAt = Date.parse(startAt);
+					// 掲載期間中か判断
+					if(parseEndAt < parseCurrent || parseStartAt > parseCurrent) return;
+					// 3ヶ月前まで表示
+					if(parseStartAt + 7776000000 < parseCurrent) return;
+					// 日付表示用
+					var dispDate = txt.startAt.split("-");
+					// iOS用DOM多すぎ対策
+					var addClass = "";
+					switch(txt.category){
+						case "NEW" :
+							countN++;
+							if(countN === 31){
+								moreDispFlg = true;
+							}
+							if(countN >= 31){
+								addClass = " notFirstView";
+							}
+							break;
+						case "MNT" :
+							countM++;
+							if(countM === 31){
+								moreDispFlg = true;
+							}
+							if(countM >= 31){
+								addClass = " notFirstView";
+							}
+							break;
+						case "UPD" :
+							countU++;
+							if(countU === 31){
+								moreDispFlg = true;
+							}
+							if(countU >= 31){
+								addClass = " notFirstView";
+							}
+							break;
+					}
+			%>
+				<li class="commonFrame4 se_decide titleList <%= txt.category %><%= addClass %><% if(Date.parse(startAt) > readDay){ %> newIcon<% } %>" data-newsId="<%= txt.id %>">
+					<span class="announceDate">
+						<div class="newMark"></div>
+						<span class="dates c_gold"><%= Number(dispDate[1]) %>/<%= Number(dispDate[2].split(" ")[0]) %></span>
+					</span>
+					<span class="announceMultiLine"><%= txt.subject%></span>
+				</li>
+				<%
+					// 続き表示ボタン
+					if(moreDispFlg){
+						moreDispFlg = false;
+				%>
+					<li class="commonFrame4 se_decide andMoreBtn more<%= txt.category %>">
+						<span>さらに続きを表示</span>
+					</li>
+				<% 	} %>
+			<%
+				})
+			%>
+			</ul>
+		</div>
+		<div class="announceRightBg commonFrame2"></div>
+	</div>
+	<div class="announceText none">
+		<div class="announceScroll3">
+			<div id="scrollTextWrap">
+				<ul class="newsField scrollBar">
+					<li class="newsTitle announceTextsTitle commonFrame4" id="announceTitle">
+						<span id="categoryBanner"></span>
+						<span class="announceMultiLine"></span>
+						<span id="innerDate" class="c_gold"></span>
+					</li>
+					<li class="newsTextField serifFont"></li>
+					<li><span class="newsClose btn b_white TE se_cancel"><span class="b_screen"></span>戻る</span></li>
+				</ul>
+			</div>
+		</div>
+		<div id="announceLeftImage"></div>
+		<div id="announceRightImage"></div>
+	</div>
+	<% if (window.isBrowser) { %>
+	<div class="debugBtn sb_gold_01 TE se_decide" style="position:absolute;left:0px;top:0px;z-index:10;">debug</div>
+	<div class="announceDebug none">
+		<textarea id="taTitle" placeholder="題名" class="commonFrame3" style="height: 10px;width: 900px;margin-top: 40px;font-size: 16px;"></textarea><br>
+		<textarea id="taText" placeholder="本文" class="commonFrame3" style="height: 330px;width: 900px;margin-top: 10px;font-size: 16px;"></textarea><br>
+		<span class="TE debugCloseBtn btn b_white se_decide">
+			<span class="b_screen"></span>
+			キャンセル
+		</span>
+		<span class="TE debugOpenBtn btn b_pink se_decide" style="margin-left: 30px;">
+			<span class="b_screen"></span>
+			OK
+		</span>
+		<span class="TE debugClearBtn sb_gold_01 se_decide" style="position: absolute;right: 50px;">クリア</span>
+	</div>
+	<% } %>	
+</script>
+
+<!-- AnnounceTempMainteテンプレート -->
+<script id="tempAnnounceTempMainte" type="text/template">
+	<div class="announceList">
+		<ul id="announceTab" class="common_tab t_pink">
+			<li class="TE se_tabs announceBtn NEW<% if(newFlg.indexOf("NEW") > -1){ %> newIcon<% } %>" data-category="NEW"><span>お知らせ</span><!-- <span class="newMark">NEW!</span> --></li>
+			<li class="TE se_tabs announceBtn MNT<% if(newFlg.indexOf("MNT") > -1){ %> newIcon<% } %>" data-category="MNT"><span>メンテナンス</span><!-- <span class="newMark">NEW!</span> --></li>
+			<li class="TE se_tabs announceBtn UPD<% if(newFlg.indexOf("UPD") > -1){ %> newIcon<% } %>" data-category="UPD"><span>アップデート</span><!-- <span class="newMark">NEW!</span> --></li>
+		</ul>
+		<div class="announceScroll2" id="newsScrollWarp">
+			<ul class="announceTitle scrollBar">
+			<%
+				// 負荷軽減用変数
+				var moreDispFlg  = false;
+				var countN = countM = countU = countF = 0;
+				_.forEach(model,function(txt,index){
+					if(!txt.subject) return;
+					// メンテ中非表示
+					if(txt.hiddenUnderMaintenance) return;
+					// 端末限定お知らせかチェック
+					if(txt.displayOs && txt.displayOs !== "ALL"){
+						if(txt.displayOs !== userAgent) return;
+					}
+					// iOS対策
+					var endAt   = txt.endAt.replace(/-/g,"\/");
+					var startAt = txt.startAt.replace(/-/g,"\/");
+					//比較用にパース
+					var parseCurrent = Date.parse(currentTime);
+					var parseEndAt   = Date.parse(endAt);
+					var parseStartAt = Date.parse(startAt);
+					// 掲載期間中か判断
+					if(parseEndAt < parseCurrent || parseStartAt > parseCurrent) return;
+					// 3ヶ月前まで表示
+					if(parseStartAt + 7776000000 < parseCurrent) return;
+					// 日付表示用
+					var dispDate = txt.startAt.split("-");
+					// iOS用DOM多すぎ対策
+					var addClass = "";
+					switch(txt.category){
+						case "NEW" :
+							countN++;
+							if(countN === 31){
+								moreDispFlg = true;
+							}
+							if(countN >= 31){
+								addClass = " notFirstView";
+							}
+							break;
+						case "MNT" :
+							countM++;
+							if(countM === 31){
+								moreDispFlg = true;
+							}
+							if(countM >= 31){
+								addClass = " notFirstView";
+							}
+							break;
+						case "UPD" :
+							countU++;
+							if(countU === 31){
+								moreDispFlg = true;
+							}
+							if(countU >= 31){
+								addClass = " notFirstView";
+							}
+							break;
+					}
+			%>
+				<li class="commonFrame4 se_decide titleList <%= txt.category %><%= addClass %>" data-newsId="<%= txt.id %>">
+					<span class="announceDate c_gold">
+						<%= Number(dispDate[1]) %>/<%= Number(dispDate[2].split(" ")[0]) %>
+						<div class="newMark"></div>
+					</span>
+					<span class="announceMultiLine"><%= txt.subject%></span>
+				</li>
+				<%
+					// 続き表示ボタン
+					if(moreDispFlg){
+						moreDispFlg = false;
+				%>
+					<li class="commonFrame4 se_decide andMoreBtn more<%= txt.category %>">
+						<span>さらに続きを表示</span>
+					</li>
+				<% 	} %>
+			<%
+				})
+			%>
+			</ul>
+		</div>
+		<div class="announceRightBg"></div>
+	</div>
+	<div class="announceText none">
+		<div class="announceScroll3">
+			<div id="scrollTextWrap">
+				<ul class="newsField scrollBar">
+					<li class="newsTitle announceTextsTitle commonFrame4" id="announceTitle">
+						<span id="categoryBanner"></span>
+						<span class="announceMultiLine"></span>
+						<span id="innerDate" class="c_gold"></span>
+					</li>
+					<li class="newsTextField serifFont"></li>
+					<li><span class="newsClose btn b_white TE se_cancel"><span class="b_screen"></span>戻る</span></li>
+				</ul>
+			</div>
+		</div>
+	</div>	
+</script>
+
+<!-- CollectionTopテンプレート -->
+<script id="tempCollectionTop" type="text/template">
+	<div id="CollectionTop">
+		<div class="btnWrap">
+			<div class="collectionBtn se_decide TE charaBtn linkBtn" data-href="#/CharaCollection"></div>
+			<div class="collectionBtn se_decide TE memoriaBtn linkBtn" data-href="#/PieceCollection"></div>
+			<div class="collectionBtn se_decide TE doppelBtn linkBtn" data-href="#/DoppelCollection"></div>
+			<div class="collectionBtn se_decide TE witchBtn linkBtn" data-href="#/EnemyCollection"></div>
+		</div>
+	</div>
+	<div id="globalMenu">
+		<span id="globalBackBtn" class="backLinkBtn TE off">
+			<span class="se_cancel"></span>
+		</span>
+	</div>
+</script>
+
+<!-- CharaCollectionテンプレート -->
+<script id="tempCharaCollection" type="text/template">
+	<div id="CharaCollection">
+		<div id="collectionDetailWrap"></div>
+		<div id="collectionListWrap">
+			<div id="tabArea">
+				<ul class="tabBtns">
+					<li class="TE se_tabs current" data-att="ALL"><img src="./img/common/chara/att_all.png"></li><!--
+					--><li class="TE se_tabs" data-att="fire"><img src="./img/common/chara/att_fire.png"></li><!--
+					--><li class="TE se_tabs" data-att="water"><img src="./img/common/chara/att_water.png"></li><!--
+					--><li class="TE se_tabs" data-att="timber"><img src="./img/common/chara/att_timber.png"></li><!--
+					--><li class="TE se_tabs" data-att="light"><img src="./img/common/chara/att_light.png"></li><!--
+					--><li class="TE se_tabs" data-att="dark"><img src="./img/common/chara/att_dark.png"></li><!--
+					--><li class="TE se_tabs" data-att="void"><img src="./img/common/chara/att_void.png"></li>
+				</ul>
+			</div>
+			<div id="charaWrap" class="all commonFrame2">
+				<h2>魔法少女一覧</h2>
+				<div class="hiddenWrap">
+					<div id="charaHiddenWrap">
+						<div id="charaWrapInner" class="charaWrapInner"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="globalMenu">
+		<span id="globalBackBtn" class="backLinkBtn TE off">
+			<span class="se_cancel"></span>
+		</span>
+	</div>
+	<!-- キャラテンプレート -->
+	<script type="text/template" id="CharaTemp">
+		<div class="nameWrap">
+			<span class='att <%="<%= model.chara.attributeId %\>"%>'></span>
+			<p class="name">
+				<%="<%= _.escape(model.chara.name) %\>"%>
+				<span class="title"><%="<%= model.chara.title %\>"%></span>
+			</p>
+			<p class="kana"><%="<%= model.chara.kana %\>"%></p>
+		</div>
+		<div class="charaIconWrap">
+			<%="<% _.forEach(model.cardList,function(txt){ %\>"%>
+				<%="<% if(!txt.nodata) { %\>"%>
+					<div class='userCharaIcon <%="<%= model.chara.attributeId %\>"%> <%="<%= txt.card.rank %\>"%>'>
+						<%="<% if(txt.openFlag) { %\>"%>
+							<%="<% att = 'att_' + txt.card.attributeId.toLowerCase() %\>"%>
+							<%="<% star = 'star_' + txt.card.rank.toLowerCase() %\>"%>
+							<%="<% frame = 'frame_' + txt.card.rank.toLowerCase() %\>"%>
+							<%="<% bg = 'bg_' + txt.card.attributeId.toLowerCase() %\>"%>
+							<span class="att"
+							 data-nativebgkey='<%="<%= att %\>"%>'
+							 data-src='resource/image_native/card/frame/<%="<%= att %\>"%>.png'></span>
+							<span class="star"
+							 data-nativebgkey='<%="<%= star %\>"%>'
+							 data-src='resource/image_native/card/frame/<%="<%= star %\>"%>.png'></span>
+							<span class="rank"
+							 data-nativebgkey='<%="<%= frame  %\>"%>'
+							 data-src='resource/image_native/card/frame/<%="<%= frame  %\>"%>.png'></span>
+							<img data-nativeimgkey='card_<%="<%= txt.cardId  %\>"%>_f'
+							 data-src='resource/image_native/card/image/card_<%="<%= txt.cardId  %\>"%>_f.png'>
+							<span class="bg"
+							 data-nativebgkey='<%="<%= bg  %\>"%>'
+							 data-src='resource/image_native/card/frame/<%="<%= bg %\>"%>.png'></span>
+						<%="<% } else { %\>"%>
+							<span class="closed"></span>
+						<%="<% } %\>"%>
+					</div>
+				<%="<% } %\>"%>
+			<%="<% }) %\>"%>
+		</div>
+	</script>	
+</script>
+
+<!-- CharaCollectionDetailテンプレート -->
+<script id="tempCharaCollectionDetail" type="text/template">
+	<span class="collectionBack">
+		<span class="se_cancel"></span>
+	</span>
+	<span class="fullScreenEnd fullScreenBack">
+		<span class="se_cancel"></span>
+	</span>
+	<span class="fullScreenEnd drawerBtn se_cancel">
+		<span class="soundIcon"></span>
+		<span class="drawerIcon"></span>
+	</span>
+	<div id="detailCardName">
+		<span id="att" class='<%= model.chara.attributeId.toLowerCase() %>'></span>
+		<p class="charaName ts_pink">
+			<%= _.escape(model.currentCard.card.cardName) %>
+			<% if(model.currentCard.chara.title) { %>
+			<span class='title ts_pink'><%= model.currentCard.chara.title %></span>
+			<% } %>
+		</p>
+		<p class="charaKana"><%= model.chara.kana %></p>
+	</div>
+	<div id="detailCardImage">
+		<% var displayCardRank = model.currentCard.card.rank %>
+		<% var cardFrame = "frame_" + model.chara.attributeId.toLowerCase() + "_" + displayCardRank.toLowerCase(); %>
+		<% var displayCardId = model.currentCard.cardId %>
+		<div data-nativebgkey="<%= cardFrame %>" data-src="resource/image_native/card/frame/<%= cardFrame %>.png" class="cardFrame <%= displayCardRank %> <%= model.chara.attributeId %>"></div>
+		<img class="cardImg se_tabs" data-nativeimgkey="card_<%= displayCardId %>_c" data-src="resource/image_native/card/image/card_<%= displayCardId %>_c.png" alt="">
+		<% if(model.chara.id === 1042){%>
+			<div class="cardNameSpecial"><%= _.escape(model.currentCard.card.cardName) %></div>
+		<% } %>
+		<div class="zoomImg se_tabs">
+			<img data-nativeimgkey="card_<%= displayCardId %>_c" data-src="resource/image_native/card/image/card_<%= displayCardId %>_c.png" alt="">
+			<% if(model.currentCard.chara.id === 1042){%>
+				<div class="cardNameSpecialZoom"><%= _.escape(model.currentCard.card.cardName) %></div>
+			<% } %>
+		</div>
+		<span class="moviePlayBtn se_tabs TE"></span>
+	</div>
+	<ul id="detailTab" class="common_tab t_gold">
+		<li data-type="status" class="TE se_tabs current"><span>ステータス</span></li>
+		<li data-type="skill" class='TE se_tabs'><span>スキル</span></li>
+		<li data-type="card" class='TE se_tabs'><span>イラスト</span></li>
+		<li data-type="illust" class='TE se_tabs'><span>衣装</span></li>
+	</ul>
+	<div id="cardDetailWrap" class="status">
+		<div id="hiddenWrap" class="hiddenWrap">
+			<div class="scrollInner">
+				<!-- ステータス -->
+				<div id="charaStatus">
+					<div class="status">
+						<!-- ちびキャラ -->
+						<div id="cardDetailMiniChara">
+							<img data-nativeimgkey="mini_<%= model.currentCard.card.miniCharaNo %>_s" data-src='resource/image_native/mini/image/mini_<%= model.currentCard.card.miniCharaNo %>_s.png' alt="">
+							<span class="bg">
+								<div id="rare" class='<%= model.currentCard.card.rank %>'>
+									<% var i = 0; %>
+									<% var maxRare = model.maxRare || Number(model.currentCard.card.rank.split('RANK_')[1]); %>
+									<% while(i < maxRare) { %>
+										<span></span>
+									<% 	i=(i+1)|0; %>
+									<% } %>
+								</div>
+							</span>
+						</div>
+						<div class="statusWrap">
+							<!-- レベル経験値 -->
+							<div class="level">
+								<div class="flexBox">
+									<span class="thStyle">Lv</span>
+									<p id="detailLv" class="tdStyle">
+										<span class="currentLv c_red"><%= model.currentCard.maxLevel %></span>
+										<span class="sla">/</span>
+										<span class="maxLv"><%= model.currentCard.maxLevel %></span>
+									</p>
+								</div>
+								<div class="gauge">
+									<div class="levelMax"></div>
+									<div class="expGaugeWrap">
+										<div class="expGaugeInner" style='width:100%'></div>
+										<div class="bg"></div>
+									</div>
+								</div>
+							</div>
+							<div class="type flexBox">
+								<span class="thStyle">タイプ</span><span class="tdStyle"><%= model.currentCard.charaType %></span>
+							</div>
+							<div class="revision">
+								<% var RevisionMax = 3;%>
+								<div class="flexBox">
+									<span class="thStyle">魔力解放</span><span class="c_red tdStyle"><%= RevisionMax %></span>
+								</div>
+								<ul class="flexBox revisionIcon">
+									<% var i = 0;%>
+									<% var onNum = RevisionMax;%>
+									<% var noneNum = RevisionMax - onNum;%>
+									<% while(i < onNum) {%>
+										<li class="on"/>
+										<% i=(i+1)|0; %>
+									<% } %>
+									<% i = 0;%>
+									<% while(i < noneNum) {%>
+										<li class=""/>
+										<% i=(i+1)|0; %>
+									<% } %>
+								</ul>
+							</div>
+							<div class="magiaLv">
+								<% var MagiaLevelMax = 5;%>
+								<div class="flexBox">
+									<span class="thStyle">マギアLv</span> <span class="tdStyle c_red"><%= MagiaLevelMax %></span>
+								</div>
+								<ul class="flexBox magiaLvIcon">
+									<% i = 0;%>
+									<% onNum = MagiaLevelMax;%>
+									<% var offNum = model.currentCard.episodeLevel - model.magiaLevel;%>
+									<% noneNum = MagiaLevelMax - (onNum + offNum);%>
+									<% while(i < onNum) {%>
+										<li class="on"/>
+										<% i=(i+1)|0; %>
+									<% } %>
+									<% i = 0;%>
+									<% while(i < offNum) {%>
+										<li class="off"/>
+										<% i=(i+1)|0; %>
+									<% } %>
+									<% i = 0;%>
+									<% while(i < noneNum) {%>
+										<li class="none"/>
+										<% i=(i+1)|0; %>
+									<% } %>
+								</ul>
+							</div>
+							<div class="epLv">
+								<% var EpisodeLevelMax = 5;%>
+								<div class="flexBox">
+									<span class="thStyle">エピソードLv</span>
+									<span class="c_red tdStyle"><%= EpisodeLevelMax %>
+										<div class="epLevelMax"></div>
+										<div class="gauge">
+											<div class="expGaugeWrap">
+												<div class="expGaugeInner3" style='width:100%'></div>
+												<div class="bg"></div>
+											</div>
+										</div>
+									</span>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="profileWrap">
+						<div class="thStyle">プロフィール</div>
+						<div class="detail commonFrame3">
+							<%= model.chara.description %>
+						</div>
+					</div>
+					<div class="flexBox">
+						<div class="exProfile1 flexBox">
+							<span class="thStyle">学校</span>
+							<span class="tdStyle"><%= model.chara.school %></span>
+						</div>
+					</div>
+					<div class="exProfile2">
+						<% var rankNum = String(displayCardId).split('')[4] %>
+						<div class="flexBox">
+							<span class="thStyle small">キャラクターデザイン</span>
+							<span class="tdStyle"><%= model.chara.designer %></span>
+						</div>
+						<div class="flexBox">
+							<span class="thStyle illustTitle">★<%= rankNum %>イラスト</span>
+							<span class="illustrator tdStyle"><%= model.currentCard.card.illustrator %></span>
+						</div>
+						<div class="flexBox">
+							<span class="thStyle">声優</span>
+							<span class="tdStyle"><%= model.chara.voiceActor %></span>
+						</div>
+					</div>
+				</div>
+				<div id="charaSkill">
+					<div class="commonFrame3 command">
+						<p class="common_title_frame">ディスク</p>
+						<ul class="commandList">
+							<li class='<%= (model.currentCard.card.commandType1) ? model.currentCard.card.commandType1 : "" %>'></li>
+							<li class='<%= (model.currentCard.card.commandType2) ? model.currentCard.card.commandType2 : "" %>'></li>
+							<li class='<%= (model.currentCard.card.commandType3) ? model.currentCard.card.commandType3 : "" %>'></li>
+							<li class='<%= (model.currentCard.card.commandType4) ? model.currentCard.card.commandType4 : "" %>'></li>
+							<li class='<%= (model.currentCard.card.commandType5) ? model.currentCard.card.commandType5 : "" %>'></li>
+						</ul>
+					</div>
+					<% if(model.currentCard.card.pieceSkillList && model.currentCard.card.pieceSkillList.length > 0) { %>
+						<% var _exSkill = model.currentCard.card.pieceSkillList; %>
+						<% if(model.currentCard.card.maxPieceSkillList.length > 0 && model.currentCard.revision === 3) { %>
+							<% _exSkill = model.currentCard.card.maxPieceSkillList; %>
+						<% } %>
+						<div class="commonFrame3 connect">
+							<p class="common_title_frame">EXスキル</p>
+							<% _.each(_exSkill,function(m) { %>
+								<div class="flexBox">
+									<p class="img">
+										<img data-nativeimgkey='icon_skill_<%= m.groupId %>' data-src='resource/image_native/art/icon_skill_<%= m.groupId %>.png'>
+									</p>
+									<div class="detailWrap">
+										<p class="name c_purple"><%= m.name %></p>
+										<div class="common_line lc_beige"></div>
+										<p class="detail"><%= m.shortDescription %></p>
+									</div>
+								</div>
+							<% }) %>
+						</div>
+					<% } %>
+					<% if(model.currentCard.card.cardSkill) { %>
+					<div class="commonFrame3 connect">
+						<p class="common_title_frame">コネクト</p>
+						<div class="flexBox">
+							<p class="img">
+								<img data-nativeimgkey='icon_skill_<%= model.currentCard.card.cardSkill.groupId %>' data-src='resource/image_native/art/icon_skill_<%= model.currentCard.card.cardSkill.groupId %>.png'>
+							</p>
+							<div class="detailWrap">
+								<p class="name c_purple"><%= model.currentCard.card.cardSkill.name %></p>
+								<div class="common_line lc_beige"></div>
+								<p class="detail"><%= model.currentCard.card.cardSkill.shortDescription %></p>
+							</div>
+						</div>
+					</div>
+					<% } %>
+					<% if(model.currentCard.card.cardMagia) { %>
+					<% var MagiaLevelMax = 5;%>
+					<div class="commonFrame3 magia">
+						<p class="common_title_frame">マギア</p>
+						<div class="border"></div>
+						<p class="common_title_frame">マギア</p>
+						<div class="flexBox magiaLevel">
+							マギアLv<span class="c_red"><%= MagiaLevelMax %></span>
+							<ul class="flexBox magiaLvIcon">
+								<% i = 0;%>
+								<% var MagiaLevelMax = 5;%>
+								<% onNum = MagiaLevelMax;%>
+								<% var offNum = 0;%>
+								<% noneNum = 0;%>
+								<% while(i < onNum) {%>
+									<li class="on"/>
+									<% i=(i+1)|0; %>
+								<% } %>
+								<% i = 0;%>
+								<% while(i < offNum) {%>
+									<li class="off"/>
+									<% i=(i+1)|0; %>
+								<% } %>
+								<% i = 0;%>
+								<% while(i < noneNum) {%>
+									<li class="none"/>
+									<% i=(i+1)|0; %>
+								<% } %>
+							</ul>
+						</div>
+						<div class="magiaDetail">
+							<div class="flexBox">
+								<p class="img">
+									<img data-nativeimgkey='icon_skill_<%= model.currentCard.card.cardMagia.groupId %>' data-src='resource/image_native/art/icon_skill_<%= model.currentCard.card.cardMagia.groupId %>.png'>
+								</p>
+								<div class="detailWrap">
+									<p class="name c_purple"><%= model.currentCard.card.cardMagia.name %></p>
+									<div class="common_line lc_beige"></div>
+									<p class="detail"><%= model.currentCard.card.cardMagia.shortDescription %></p>
+								</div>
+							</div>
+						</div>
+						<% if(model.currentCard.card.doppelCharaNo) { %>
+							<% console.log(model); %>
+							<div class="doppel doppelDetail">
+								<div class="flexBox">
+									<% if(model.currentCard.doppelOpenFlag && model.currentCard.card.doppelMagiaId) { %>
+										<p class="img doppel">
+											<img data-nativeimgkey='mini_<%= model.currentCard.card.doppelCharaNo %>_dd' data-src='resource/image_native/mini/image/mini_<%= model.currentCard.card.doppelCharaNo %>_dd.png'>
+											<span class="bg"></span>
+										</p>
+										<div class="detailWrap">
+											<p class="name c_purple"><%= model.currentCard.card.doppelCardMagia.name %></p>
+											<div class="common_line lc_beige"></div>
+											<p class="detail"><%= model.currentCard.card.doppelCardMagia.shortDescription %></p>
+										</div>
+									<% } else { %>
+										<p class="img">
+											<img src='./img/common/chara/icon_doppel_null.png'>
+										</p>
+										<div class="detailWrap">
+											<p class="name c_purple">未解放</p>
+											<div class="common_line lc_beige"></div>
+											<p class="detail">ドッペルクエストクリアで解放</p>
+										</div>
+									<% } %>
+								</div>
+							</div>
+						<% } %>
+					</div>
+					<% } %>
+				</div>
+				<div id="charaCard">
+					<div class="commonFrame3">
+						<p class="common_title_frame">魔法少女</p>
+						<div class="flexBox">
+							<% _.forEach(model.cardList,function(txt,index){ %>
+								<% if(!txt.openFlag) { %>
+									<div class="cardIllustWrap off">
+										<div class="offIcon"></div>
+										<p class="mb_pink off">★<%= txt.rankNum %></p>
+									</div>
+								<% } else { %>
+								<div class="cardIllustWrap">
+									<div class="userCharaIcon <%= txt.rank %> <%= txt.attributeId %>">
+										<% att = "att_" + txt.card.attributeId.toLowerCase() %>
+										<% star = "star_" + txt.card.rank.toLowerCase() %>
+										<% frame = "frame_" + txt.card.rank.toLowerCase() %>
+										<% bg = "bg_" + txt.card.attributeId.toLowerCase() %>
+										<span class="att" data-nativebgkey="<%= att %>" data-src="resource/image_native/card/frame/<%= att %>.png"></span>
+										<span class="star" data-nativebgkey="<%= star %>" data-src="resource/image_native/card/frame/<%= star %>.png"></span>
+										<span class="rank" data-nativebgkey="<%= frame %>" data-src="resource/image_native/card/frame/<%= frame %>.png"></span>
+										<img data-nativeimgkey="card_<%= txt.cardId %>_f" data-src='resource/image_native/card/image/card_<%= txt.cardId %>_f.png'>
+										<span class="bg" data-nativebgkey="<%= bg %>" data-src="resource/image_native/card/frame/<%= bg %>.png"></span>
+									</div>
+									<% btnClass = (model.currentCard.cardId == txt.cardId) ? 'selected' : '' %>
+									<p data-cardarrindex="<%= index %>" class="mb_pink se_decide <%= btnClass %>">★<%= txt.rankNum %></p>
+								</div>
+								<% } %>
+							<% }) %>
+						</div>
+					</div>
+				</div>
+				<div id="charaIllust">
+					<div class="commonFrame3">
+						<p class="common_title_frame">ホーム衣装</p>
+						<div class="live2dBtns">
+							<% _.forEach(model.currentCard.live2dList,function(txt,index){ %>
+								<% classTxt = (index == 0) ? "current" : ""; %>
+								<div class="live2dChangeBtn se_decide commonFrame4 c_gold <%= classTxt %>" data-live2did="<%= txt.live2dId %>">
+									<%= txt.description %>
+								</div>
+							<% }) %>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>	
+</script>
+
+<!-- MemoriaCollection テンプレート -->
+<script id="tempMemoriaCollection" type="text/template">
+	<div id="MemoriaCollection">
+		<div id="memoriaListHeader">
+			<ul id="memoriaListInfo" class="memoriaInfo">
+				<li class="cardCount_2"><span id="info_memoriaCount"></span>/<span id="info_memoriaCapacity"></span></li>
+			</ul>
+		</div>
+		<div id="memoriaWrap" class="commonFrame1">
+			<div id="memoriaScrollWrap" class="memoriaScrollWrap">
+				<div id="memoriaWrapInner" class="memoriaWrapInner"></div>
+			</div>
+		</div>
+		<!-- メモリアサイズ変更ボタン -->
+		<div id="sizeChange" class="se_tabs TE" data-size="smaller"><span class="b_screen"></span></div>
+	</div>
+	<div id="globalMenu">
+		<span id="globalBackBtn" class="backLinkBtn TE off">
+			<span class="se_cancel"></span>
+		</span>
+	</div>
+	<script type="text/template" id="MemoriaListParts">
+		<div class="cardInner">
+		<%="<% if(model.openFlag) { %\>"%>
+			<img src='./img/memoria/memoria_<%="<%= model.pieceId %\>"%>_s.png' alt=''>
+		<%="<% } else { %\>"%>
+			<span class="notOpen"></span>
+		<%="<% } %\>"%>
+		</div>
+	</script>	
+</script>
+
+<!-- MemoriaPopup テンプレート -->
+<script id="tempMemoriaPopup" type="text/template">
+	<span class="closeDefault se_cancel popupCloseBtn TE" id="memoriaPopClose"></span>
+	<div class="whiteLine"></div>
+	<div class="memoriaNameWrap <%= model.piece.pieceType %>">
+		<span class="memoriaTypeIcon"></span>
+		<span class="memoriaName c_white"><%= model.piece.pieceName %></span>
+		<span class="memoriaTypeName"><% if(model.piece.pieceType === "SKILL"){ %>スキルタイプ<% }else{ %>アビリティタイプ<% } %></span>
+	</div>
+	<div id="memoriaDetailPopup">
+		<div class="popupCardImage">
+			<img data-nativeimgkey="memoria_<%= model.piece.pieceId %>_c" data-src="resource/image_native/memoria/memoria_<%= model.piece.pieceId %>_c.png">
+		</div>
+		<div class="popupDetailWrap commonFrame5 <%= model.piece.pieceType %><% if(model.btnHide == true){ %> btnHide<% } %>" id="memoriaPopScroll">
+			<div class="hideArea">
+			<div class="infoWrap">
+				<div class="effectiveWrap">
+					<dl class="equipLimited common_dl">
+						<dt class="limitedTitle">装備可能</dt>
+						<dd class="canEquip">
+							<%
+								var equipLimited;
+								switch(model.piece.attributeId){
+									case "ALL":
+										equipLimited = "";
+										break;
+									case "FIRE":
+										equipLimited = "火属性";
+										break;
+									case "WATER":
+										equipLimited = "水属性";
+										break;
+									case "TIMBER":
+										equipLimited = "木属性";
+										break;
+									case "LIGHT":
+										equipLimited = "光属性";
+										break;
+									case "DARK":
+										equipLimited = "闇属性";
+										break;
+								};
+							%>
+							<% if(equipLimited){ %>
+								<%= equipLimited %>
+							<% } %>
+							<% if(model.piece.charaList) { %>
+								<% _.each(model.piece.charaList,function(obj,index){ %>
+									<% var name = (index !== 0) ? '、'+obj.name : obj.name; %>
+									<%= _.escape(name) %>
+								<% }); %>
+							<% } %>
+							<% if(!equipLimited && !model.piece.charaList){ %>
+								すべて
+							<% } %>
+						</dd>
+					</dl>
+					<div class="memoriaHr common_line lc_beige"></div>
+					<div class="cardDescription">
+						<%= model.piece.description %>
+					</div>
+				</div>
+				<div class="illustrator">
+					<%= model.piece.illustrator %>
+				</div>
+			</div>
+			</div>
+			<div id="strengtheningBtn" class="sb_pink01 TE se_decide">強化</div>
+			<div id="breakthroughBtn" class="sb_pink01 TE se_decide">限界突破</div>
+		</div>
+		<%
+			var addClass = "";
+			if(model.protect)            addClass  = " protected";
+			if(model.unprotectLimitFlag) addClass += " cantUnlock";
+		%>
+		<% if(!model.lockFlg && !model.supportFlag){ %><span id="memoriaProtect" class="se_decide<%= addClass %>"><% if(model.protect){ %>ロック中<% }else{ %>ロック<% } %></span><% } %>
+	</div>
+</script>
+
+<!-- EnemyCollectionテンプレート -->
+<script id="tempEnemyCollection" type="text/template">
+	<div id="EnemyCollection">
+		<div id="enemyBackBtn" class="se_cancel"></div>
+		<h1></h1>
+		<div id="enemyListWrap">
+			<div id="enemyList">
+				<div class="enemyListInner flexBox">
+				</div>
+			</div>
+		</div>
+		<div id="enemyDetailWrap" class="noDisp">
+		</div>
+		<div class="frame"></div>
+	</div>
+</script>
+<script type="text/template" id="EnemyPartsTemp">
+	<p class='idText c_gold'>#<%= model.idText %></p>
+	<div class="mask">
+		<% if(model.isClose) { %>
+			<img src='./img/page/collection/icon_unknown.png' alt=''>
+		<% } else { %>
+			<img data-nativeimgkey='enemy_<%= model.enemyNo %>_s' data-src='resource/image_native/enemy_w/enemy_<%= model.enemyNo %>_s.png'>
+		<% } %>
+	</div>
+</script>
+<script type="text/template" id="EnemyDetailTemp">
+	<p class='idText'>#<%= model.idText %></p>
+	<div class="enemyImg">
+		<img data-nativeimgkey='enemy_<%= model.enemyNo %>_l' data-src='resource/image_native/enemy_w/enemy_<%= model.enemyNo %>_l.png'>
+	</div>
+	<div class="nameWrap">
+		<div class="enemyNameImg">
+			<img data-nativeimgkey='enemy_<%= model.enemyNo %>_c' data-src='resource/image_native/enemy_w/enemy_<%= model.enemyNo %>_c.png'>
+		</div>
+		<% if(model.type !== 3) { %>
+			<p class="doppelName"><%= model.name %></p>
+			<p class="doppelTitle"><%= model.title %></p>
+		<% } %>
+	</div>
+	<p class="enemyDetail"><%= model.description %></p>
+	<p class="enemyDesigner"><%= model.designer %></p>
+</script>
+
+<!-- DoppelCollectionテンプレート -->
+<script id="tempDoppelCollection" type="text/template">
+	<div id="DoppelCollection">
+		<div id="doppelBackBtn" class="se_cancel"></div>
+		<h1></h1>
+		<div id="doppelListWrap">
+			<div class="doppelCount"><span class="hasNum">-</span>/<span class="totalNum"></span></div>
+			<div id="doppelList">
+				<div class="doppelListInner flexBox">
+				</div>
+			</div>
+		</div>
+		<div id="doppelDetailWrap" class="noDisp">
+		</div>
+		<div class="frame"></div>
+	</div>
+</script>
+<script type="text/template" id="DoppelPartsTemp">
+	<% if(model.id) { %>
+		<div class="mask">
+			<img data-nativeimgkey='doppel_<%= model.id %>_s' data-src='resource/image_native/doppel_w/doppel_<%= model.id %>_s.png'>
+		</div>
+	<% } else { %>
+		<img src='./img/page/collection/doppel_none.png' alt=''>
+	<% } %>
+</script>
+<script type="text/template" id="DoppelDetailTemp">
+	<div class="doppelImg">
+		<img data-nativeimgkey='doppel_<%= model.id %>_l' data-src='resource/image_native/doppel_w/doppel_<%= model.id %>_l.png'>
+	</div>
+	<div class="nameWrap">
+		<div class="doppelNameImg">
+			<img data-nativeimgkey='doppel_<%= model.id %>_c' data-src='resource/image_native/doppel_w/doppel_<%= model.id %>_c.png'>
+		</div>
+		<p class="doppelName"><%= model.name %></p>
+		<p class="doppelTitle"><%= model.title %></p>
+	</div>
+	<p class="doppelDetail"><%= model.description %></p>
+	<p class="doppelDesigner"><%= model.designer %></p>
+</script>
+
+</html>

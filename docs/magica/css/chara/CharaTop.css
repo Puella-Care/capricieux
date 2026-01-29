@@ -1,0 +1,19 @@
+#richeWrap {
+  display: none !important;
+}
+
+#CharaTop {
+  width: 1024px;
+  height: 100%;
+  position: relative;
+}
+
+#CharaTop #poseChangeBtn {
+  width: 66px;
+  height: 66px;
+  background: url("../../img/page/chara/btn_pose.png") left top no-repeat;
+  position: absolute;
+  top: 365px;
+  left: 234px;
+  z-index: 100000;
+}
