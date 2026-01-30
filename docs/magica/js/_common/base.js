@@ -257,7 +257,7 @@ require([
 		if(window.isBrowser) nativeCallback('');
 	};
 	//環境を分ける
-	if( platform === 'Win32' ||  platform === 'Win64' ){
+	if( true || platform === 'Win32' ||  platform === 'Win64' ){
 		window.isBrowser = true;
 		__beforeGameInit();
 	} else if(platform === 'MacIntel'){
