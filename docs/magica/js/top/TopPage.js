@@ -7,7 +7,7 @@ define([
 	//"text!template/top/TopPage.html",
 	//"text!css/top/Top.css",
 	//'js/top/RefundPoup',
-	//'text!../../../../../localUserData.json', //テストデータ
+	'text!json/todestrieb/localUserData.json', //テストデータ
 	//'text!template/announce/tempTakeover.html',
 	//'text!template/announce/tempNotice01.html',
 	//'text!template/announce/tempNotice02.html',
@@ -20,7 +20,7 @@ define([
 	//pageTemp,
 	//css,
 	//RefundPoup,
-	//localUserData, //テストデータ
+	localUserData, //テストデータ
 	//tempTakeover,
 	//tempNotice01,
 	//tempNotice02
@@ -322,8 +322,8 @@ define([
 			_callback(__userData);
 		});
 		//ブラウザテスト用
-		//if (window.isBrowser) nativeCallback(JSON.parse(localUserData));
-		if (window.isBrowser) nativeCallback('');
+		if (window.isBrowser) nativeCallback(JSON.parse(localUserData));
+		//if (window.isBrowser) nativeCallback('');
 		//ユーザーデータ確認用ネイティブコマンド
 		cmd.getUserJson();
 	};
