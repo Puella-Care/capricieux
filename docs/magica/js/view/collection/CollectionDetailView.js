@@ -242,6 +242,7 @@ define([
 		},
 		charaMoviewPlay: function(e) {
 			e.preventDefault();
+			return;
 			if(common.isScrolled()) return;
 
 			common.androidKeyStop = true;

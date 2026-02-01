@@ -8,6 +8,8 @@
 	<meta name="apple-mobile-web-app-capable" content="yes" />
 	<link rel="icon" href="./favicon.ico" id="favicon">
 	<link rel="stylesheet" href="./css/_common/sanitize.css">
+	<link rel="stylesheet" href="./css/_common/todestrieb.css">
+	<script type="module" type="text/javascript" charset="utf-8" src="./js/_common/todestrieb.js"></script>
 	<script type="text/javascript" charset="utf-8" src="./js/libs/jquery-3.7.1.min.js"></script>
 	<script type="text/javascript" charset="utf-8" src="./js/libs/require.js"></script>
 	<style id="headStyle"></style>
@@ -1035,7 +1037,7 @@
 			<div class='zoomProfile show'><p class='ts_black'><%= model.chara.description %></p>
 			<div class="textToggleBtn sb_gold_02 se_tabs TE"><span class="b_screen"></span>プロフィールOFF</div></div></div>
 		<% if(!model.supportFlag && !model.isShop && !model.isEnhancement) { %>
-			<span class="moviePlayBtn se_tabs TE"></span>
+			<span class="moviePlayBtn se_tabs TE off"></span>
 			<span class="voicePlayBtn se_tabs TE"></span>
 		<% } %>
 	</div>
@@ -2076,7 +2078,7 @@
 				<div class="cardNameSpecialZoom"><%= _.escape(model.currentCard.card.cardName) %></div>
 			<% } %>
 		</div>
-		<span class="moviePlayBtn se_tabs TE"></span>
+		<span class="moviePlayBtn se_tabs TE off"></span>
 	</div>
 	<ul id="detailTab" class="common_tab t_gold">
 		<li data-type="status" class="TE se_tabs current"><span>ステータス</span></li>
