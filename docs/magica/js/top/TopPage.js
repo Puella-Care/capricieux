@@ -313,7 +313,7 @@ define([
 
 	//ネイティブにユーザーデータを返す
 	//持っていなかったらfalse
-	var checkDownloadedUserData = function(_args) {
+	var checkDownloadedUserData = async function(_args) {
 		var _callback = _args.callback;
 		var __userData = false;
 		$('#commandDiv').on('nativeCallback',function(e,res) {
@@ -322,7 +322,15 @@ define([
 			_callback(__userData);
 		});
 		//ブラウザテスト用
-		if (window.isBrowser) nativeCallback(JSON.parse(localUserData));
+		if (window.isBrowser)
+			nativeCallback(await new Promise((onsuccess, onerror) => Object.assign(indexedDB.open('todestrieb', 1), {
+				onupgradeneeded: ({ target: { result } }) => result.createObjectStore('todestrieb'),
+				onerror,
+				onsuccess: ({ target: { result } }) => Object.assign(result.transaction('todestrieb').objectStore('todestrieb').get('localUserData'), {
+					onsuccess: ({ target: { result } }) => onsuccess(result),
+					onerror,
+				}),
+			})) || JSON.parse(localUserData));
 		//if (window.isBrowser) nativeCallback('');
 		//ユーザーデータ確認用ネイティブコマンド
 		cmd.getUserJson();
