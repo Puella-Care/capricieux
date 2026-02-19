@@ -306,7 +306,7 @@ define([
 			l2dPrm.subY = 0;
 		}
 
-		var isDoublePAPA = chara.chara.doubleUnitFlg&& this.live2dId == "88";
+		var isDoublePAPA = chara.chara.doubleUnitFlg && live2dId == "88";
 
 		if(voiceKey) {
 			l2dPrm.voice = voiceKey;
