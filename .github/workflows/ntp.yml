@@ -1,0 +1,16 @@
+name: ntp pool
+
+on:
+  schedule:
+    - cron: '0 */12 * * *'
+  workflow_dispatch:
+
+jobs:
+  ntp:
+    name: Test NTP pool score
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          IP="$(getent ahosts ${{ secrets.HOST }} | head -n1 | cut -d' ' -f1)"
+          OBJ="$(curl -fsSL https://www.ntppool.org/api/data/server/dns/answers/${IP} | jq '.Server|map({(.CC):del(.CC)})|add')"
+          echo "${OBJ}" | tee /dev/stderr | jq -e '.jp.Points > 10'
