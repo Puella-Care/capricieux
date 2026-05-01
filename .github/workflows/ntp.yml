@@ -12,5 +12,5 @@ jobs:
     steps:
       - run: |
           IP="$(getent ahosts ${{ secrets.HOST }} | head -n1 | cut -d' ' -f1)"
-          OBJ="$(curl -fsSL https://www.ntppool.org/api/data/server/dns/answers/${IP} | jq '.Server|map({(.CC):del(.CC)})|add')"
-          echo "${OBJ}" | tee /dev/stderr | jq -e '.jp.Points > 10'
+          curl -fsSL https://www.ntppool.org/api/data/server/dns/answers/${IP} | jq '.Server|map({(.CC):del(.CC)})|add'
+          curl -fsSL https://www.ntppool.org/scores/${IP}/json | jq -e '.monitors[]|select(.type=="score"and.score>10and.status=="active")'
