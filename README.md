@@ -7,7 +7,6 @@ This is repository for managing the Capricieux server.
 [![android](https://github.com/Puella-Care/capricieux/actions/workflows/android.yml/badge.svg?event=schedule)](https://github.com/Puella-Care/capricieux/actions/workflows/android.yml)
 [![ios](https://github.com/Puella-Care/capricieux/actions/workflows/ios.yml/badge.svg?event=schedule)](https://github.com/Puella-Care/capricieux/actions/workflows/ios.yml)
 [![te-data](https://github.com/Puella-Care/capricieux/actions/workflows/te-data.yml/badge.svg?event=schedule)](https://github.com/Puella-Care/capricieux/actions/workflows/te-data.yml)
-[![cronjob](https://github.com/Puella-Care/capricieux/actions/workflows/cronjob.yml/badge.svg?event=schedule)](https://github.com/Puella-Care/capricieux/actions/workflows/cronjob.yml)
 
 ## Public key
 
